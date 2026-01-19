@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace OpenOrClosed.ViewModels;
+namespace OpenOrClosed.Core.ViewModels;
 
 [DataContract]
 public class DaysViewModel

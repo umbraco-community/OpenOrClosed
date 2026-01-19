@@ -1,4 +1,4 @@
-﻿namespace OpenOrClosed.Constants;
+﻿namespace OpenOrClosed.Core.Constants;
 
 public static class Icons
 {

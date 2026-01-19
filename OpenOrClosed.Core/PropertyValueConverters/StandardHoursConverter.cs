@@ -1,11 +1,10 @@
 ﻿using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
-using Umbraco.Cms.Core.Services;
 using Newtonsoft.Json;
-using OpenOrClosed.ViewModels;
-using OpenOrClosed.PropertyEditors;
+using OpenOrClosed.Core.ViewModels;
+using OpenOrClosed.Core.PropertyEditors;
 
-namespace OpenOrClosed.PropertyValueConverters;
+namespace OpenOrClosed.Core.PropertyValueConverters;
 
 public class StandardHoursConverter : PropertyValueConverterBase
 {
