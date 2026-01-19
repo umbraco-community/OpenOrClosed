@@ -1,6 +1,6 @@
 ﻿using Umbraco.Cms.Core.PropertyEditors;
 
-namespace OpenOrClosed.PropertyEditors;
+namespace OpenOrClosed.Core.PropertyEditors;
 
 [DataEditor(
     EditorAlias,

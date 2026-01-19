@@ -20,6 +20,11 @@ Adds the ability to specify specific dates, with the same set of features for St
 
 ## Change Log
 
+### Version 17.1.0
+
+Breaking Change! Models are now back in the `OpenOrClosed.Core` namespace (and nuget package), leaving the OpenOrClosed nuget package to mainly deliver the UI.
+
+
 ### Version 17
 
 Updated for Umbraco 17

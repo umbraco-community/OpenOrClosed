@@ -1,9 +1,9 @@
 ﻿using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
 using Newtonsoft.Json;
-using OpenOrClosed.PropertyEditors;
+using OpenOrClosed.Core.PropertyEditors;
 
-namespace OpenOrClosed.PropertyValueConverters;
+namespace OpenOrClosed.Core.PropertyValueConverters;
 
 public class SpecialHoursConverter() : PropertyValueConverterBase
 {
@@ -33,7 +33,7 @@ public class SpecialHoursConverter() : PropertyValueConverterBase
 
         // TODO: There has to be a better way to get the configuration object...
         var config = propertyType.DataType.ConfigurationAs<Dictionary<string, object>>();
-        var removeOldDates = (config?.TryGetValue(Constants.PropertyEditors.PreValues.RemoveOldDates, out var oRemoveOldDates) ?? false) && (bool)oRemoveOldDates;
+        var removeOldDates = (config?.TryGetValue(Core.Constants.PropertyEditors.PreValues.RemoveOldDates, out var oRemoveOldDates) ?? false) && (bool)oRemoveOldDates;
         var currDate = DateTime.Now.Date.Date;
 
         // Go through and adjust the dates for each set of hours.

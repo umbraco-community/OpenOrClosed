@@ -1,7 +1,7 @@
 {
   "name": "umbraco-openorclosed",
   "private": true,
-  "version": "16.0.0",
+  "version": "17.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,10 @@
     "preview": "vite preview",
     "watch": "vite build --watch"
   },
+  "peerDependencies": {
+    "@umbraco-cms/backoffice": "^17.0.0"
+  },
   "devDependencies": {
-    "@umbraco-cms/backoffice": "^16.0.0",
     "lit": "^3.3.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.0"

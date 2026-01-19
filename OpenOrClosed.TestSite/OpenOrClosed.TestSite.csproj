@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../OpenOrClosed.Core/OpenOrClosed.Core.csproj" />
     <ProjectReference Include="../OpenOrClosed/OpenOrClosed.csproj" />
   </ItemGroup>
 

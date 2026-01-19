@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHub", "GitHub", "{5064D0
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenOrClosed.TestSite", "OpenOrClosed.TestSite\OpenOrClosed.TestSite.csproj", "{95167C47-3CA1-40DA-A1D9-2AA9431443D5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenOrClosed.Core", "OpenOrClosed.Core\OpenOrClosed.Core.csproj", "{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,18 @@ Global
 		{95167C47-3CA1-40DA-A1D9-2AA9431443D5}.Release|x64.Build.0 = Release|Any CPU
 		{95167C47-3CA1-40DA-A1D9-2AA9431443D5}.Release|x86.ActiveCfg = Release|Any CPU
 		{95167C47-3CA1-40DA-A1D9-2AA9431443D5}.Release|x86.Build.0 = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|x64.Build.0 = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Debug|x86.Build.0 = Debug|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|x64.ActiveCfg = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|x64.Build.0 = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|x86.ActiveCfg = Release|Any CPU
+		{74A637CB-45FE-4AA2-ADCB-DC5E6F7F0FF7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
