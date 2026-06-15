@@ -1,11 +1,16 @@
 name: OpenOrClosed - CI
 
 on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - master
   pull_request:
 
 env:
-  SOLUTION: OpenOrClosed.Release.slnx
   CLIENT_PROJECT: OpenOrClosed/Client
+  PLUGIN_PROJECT: OpenOrClosed/OpenOrClosed.csproj
   OUTPUT_PATH: ./build-out/
 
 jobs:
