@@ -6,12 +6,11 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 		<StaticWebAssetBasePath>/</StaticWebAssetBasePath>
-		<EnableDefaultContentItems>true</EnableDefaultContentItems>
 	</PropertyGroup>
 
 	<!-- NuGet package metadata -->
 	<PropertyGroup>
-		<Version>17.1.1</Version>
+		<Version>17.1.2-pre1</Version>
 		<Description>
 			Open or Closed - Yet another Business Hours package!
 
@@ -46,8 +45,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Umbraco.Cms.Web.Website" Version="17.0.0" />
-		<PackageReference Include="Umbraco.Cms.Api.Management" Version="17.0.0" />
+		<PackageReference Include="Umbraco.Cms.Web.Website" Version="[17.0.0,19)" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -70,9 +68,9 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup>
+	<!-- <ItemGroup>
 	  <ProjectReference Include="../OpenOrClosed.Core/OpenOrClosed.Core.csproj" />
-	</ItemGroup>
+	</ItemGroup> -->
 
 	<!--
       1. Install npm packages

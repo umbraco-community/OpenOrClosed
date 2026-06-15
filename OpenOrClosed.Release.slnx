@@ -1,0 +1,17 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Documentation/">
+    <File Path="README.md" />
+    <File Path="umbraco-marketplace.json" />
+  </Folder>
+  <Folder Name="/GitHub/">
+    <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+  <!-- <Project Path="OpenOrClosed.Core/OpenOrClosed.Core.csproj" /> -->
+  <Project Path="OpenOrClosed/OpenOrClosed.csproj" />
+</Solution>
