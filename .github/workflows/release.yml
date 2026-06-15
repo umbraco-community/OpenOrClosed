@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 env:
-  SOLUTION: OpenOrClosed.Release.sln
+  SOLUTION: OpenOrClosed.Release.slnx
   PLUGIN_PROJECT: OpenOrClosed/OpenOrClosed.csproj
   OUTPUT_PATH: ${{ github.workspace }}/.output
 
