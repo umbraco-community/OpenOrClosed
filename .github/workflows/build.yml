@@ -4,7 +4,7 @@ on:
   pull_request:
 
 env:
-  SOLUTION: OpenOrClosed.Release.sln
+  SOLUTION: OpenOrClosed.Release.slnx
   OUTPUT_PATH: ${{ github.workspace }}/.output
 
 jobs:
