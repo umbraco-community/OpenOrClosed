@@ -20,10 +20,14 @@ Adds the ability to specify specific dates, with the same set of features for St
 
 ## Change Log
 
+### Version 17.1.2
+
+* **Breaking Change:** Moved business logic back into main OpenOrClosed website - remove references to `OpenOrClosed.Core` and replace with `OpenOrClosed` nuget package where necessary.  Make sure you clean out obj/bin directories and rebuild.
+* Fixed issues with static assets not available on Windows dev environments
+
 ### Version 17.1.0
 
-Breaking Change! Models are now back in the `OpenOrClosed.Core` namespace (and nuget package), leaving the OpenOrClosed nuget package to mainly deliver the UI.
-
+**Breaking Change:** Models are now back in the `OpenOrClosed.Core` namespace (and nuget package), leaving the OpenOrClosed nuget package to mainly deliver the UI.
 
 ### Version 17
 
