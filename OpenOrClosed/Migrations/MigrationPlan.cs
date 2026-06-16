@@ -1,4 +1,5 @@
 using OpenOrClosed.Migrations.Install;
+using OpenOrClosed.Migrations.Upgrade;
 using Umbraco.Cms.Core.Packaging;
 
 namespace OpenOrClosed.Migrations;
@@ -11,6 +12,7 @@ internal sealed class MigrationPlan() : PackageMigrationPlan("OpenOrClosed")
     {
         From(InitialState)
             .To<RegisterUmbracoPackageEntry>(RegisterUmbracoPackageEntry.State)
+            .To<MigrateOpenOrClosedDataTypes>(MigrateOpenOrClosedDataTypes.State)
             ;
     }
 }
