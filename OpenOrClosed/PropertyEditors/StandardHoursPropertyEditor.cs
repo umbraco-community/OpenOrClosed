@@ -9,4 +9,5 @@ namespace OpenOrClosed.Core.PropertyEditors;
 public class StandardHoursPropertyEditor(IDataValueEditorFactory dataValueEditorFactory) : DataEditor(dataValueEditorFactory)
 {
     internal const string EditorAlias = "OpenOrClosed.StandardHours";
+    internal const string UiEditorAlias = "OpenOrClosed.PropertyEditorUi.StandardHours";
 }
