@@ -34,7 +34,6 @@
 		<PackageIcon>OpenOrClosed_logo.png</PackageIcon>
 		<PackageIconUrl>
 			https://raw.githubusercontent.com/YourITGroup/OpenOrClosed/master/assets/OpenOrClosed_logo.png</PackageIconUrl>
-		<PackageProjectUrl>https://github.com/YourITGroup/OpenOrClosed</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/YourITGroup/OpenOrClosed</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>umbraco umbraco-marketplace Business Hours</PackageTags>

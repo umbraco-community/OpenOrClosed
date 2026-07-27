@@ -30,7 +30,6 @@ jobs:
       
     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v4
-
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
   
@@ -73,30 +72,30 @@ jobs:
     - name: Create the package
       run: dotnet pack ${{ env.PLUGIN_PROJECT }} --no-build --no-restore --configuration Release -o ${{ env.OUTPUT_PATH }}
       
-    - name: Publish to NuGet
-      if: github.event_name == 'release'
-      working-directory: ${{ env.OUTPUT_PATH }}
-      run: dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
+    # - name: Publish to NuGet
+    #   if: github.event_name == 'release'
+    #   working-directory: ${{ env.OUTPUT_PATH }}
+    #   run: dotnet nuget push *.nupkg -s https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
 
-    - uses: avakar/tag-and-release@v1
-      if: github.event_name == 'release'
-      name: Create Release Tag v${{ steps.package_version.outputs.version }}
-      id: release
-      with:
-        tag_name: v${{ steps.package_version.outputs.version }}
-        prerelease: ${{ steps.check_prerelease.outputs.prerelease }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # - uses: avakar/tag-and-release@v1
+    #   if: github.event_name == 'release'
+    #   name: Create Release Tag v${{ steps.package_version.outputs.version }}
+    #   id: release
+    #   with:
+    #     tag_name: v${{ steps.package_version.outputs.version }}
+    #     prerelease: ${{ steps.check_prerelease.outputs.prerelease }}
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Release information for v${{ steps.package_version.outputs.version }}
-      if: github.event_name == 'release'
-      run: |
-        echo Release Id: ${{ steps.release.outputs.id }}
-        echo Upload URL: ${{ steps.release.outputs.upload_url }}
-        echo Release URL: ${{ steps.release.outputs.html_url }}
+    # - name: Release information for v${{ steps.package_version.outputs.version }}
+    #   if: github.event_name == 'release'
+    #   run: |
+    #     echo Release Id: ${{ steps.release.outputs.id }}
+    #     echo Upload URL: ${{ steps.release.outputs.upload_url }}
+    #     echo Release URL: ${{ steps.release.outputs.html_url }}
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: nuget
-        path: ${{ env.OUTPUT_PATH }}/
+    # - name: Upload artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: nuget
+    #     path: ${{ env.OUTPUT_PATH }}/
