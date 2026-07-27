@@ -460,7 +460,7 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
                                             label="Open time"
                                             ?required=${!this._config.excludeTimes && !this._config.hoursOptional}
                                             ${umbBindToValidation(this, `opensAt_${dayIndex}_${hoursIndex}`)}
-                                            >
+                                        >
                                         </uui-input>
                                     <span>to</span>
                                         <uui-input
@@ -475,8 +475,8 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
                                             ?error=${this._hasValidationError(dayIndex, hoursIndex, 'closesAt')}
                                             .errorMessage=${this._validateTimeField(dayIndex, hoursIndex, 'closesAt')}
                                             ?required=${!this._config.excludeTimes && !this._config.hoursOptional && !this._config.closedHoursOptional}
-                                            ${umbBindToValidation(this, `closesAt_${dayIndex}_${hoursIndex}`)}>
-                                            >
+                                            ${umbBindToValidation(this, `closesAt_${dayIndex}_${hoursIndex}`)}
+                                        >
                                         </uui-input>
                                 </div>
                             ` : ''}

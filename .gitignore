@@ -383,3 +383,4 @@ FodyWeavers.xsd
 /OpenOrClosed/wwwroot/App_Plugins
 OpenOrClosed.TestSite/appsettings-schema.*
 OpenOrClosed.TestSite/umbraco-package-schema.json
+*.csproj.lscache
