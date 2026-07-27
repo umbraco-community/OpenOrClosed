@@ -8,8 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms" Version="17.4.2" />
-    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.4.2" />
+    <!-- <PackageReference Include="OpenOrClosed" Version="17.1.2" /> -->
+    <PackageReference Include="Umbraco.Cms" Version="18.0.2" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="18.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,8 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- <ProjectReference Include="../OpenOrClosed.Core/OpenOrClosed.Core.csproj" /> -->
-    <ProjectReference Include="../OpenOrClosed/OpenOrClosed.csproj" />
+    <ProjectReference Include=".. /OpenOrClosed/OpenOrClosed.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
