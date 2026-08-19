@@ -1,9 +1,20 @@
-import { css, customElement, html, LitElement, property } from '@umbraco-cms/backoffice/external/lit';
 import {
+    css,
+    customElement,
+    html,
+    LitElement,
+    property,
+    state,
+} from '@umbraco-cms/backoffice/external/lit';
+import {
+    createRange,
     DAY_MINUTES,
     DEFAULT_SNAP_MINUTES,
     formatRange,
+    largestGap,
+    moveRange,
     parseTime,
+    resizeRange,
     type HoursRange,
 } from './time-range.js';
 
@@ -31,6 +42,18 @@ export class OocTimelineElement extends LitElement {
     @property({ type: String })
     trackLabel = '';
 
+    /** How long a range created by clicking empty track should be. */
+    @property({ type: Number })
+    defaultDurationMinutes = 8 * 60;
+
+    @state()
+    private _announcement = '';
+
+    #drag: { index: number; mode: 'start' | 'end' | 'move'; grabOffset: number } | null = null;
+
+    /** A drag ends with a click. Without this, letting go would also open the dialog. */
+    #dragged = false;
+
     protected _percent(minutes: number): number {
         return (minutes / DAY_MINUTES) * 100;
     }
@@ -40,6 +63,134 @@ export class OocTimelineElement extends LitElement {
         if (range.label) parts.push(range.label);
         if (range.byAppointmentOnly) parts.push('by appointment only');
         return parts.filter(Boolean).join(', ');
+    }
+
+    /** Turns a pointer position into minutes since midnight. */
+    #minutesFromEvent(event: PointerEvent): number {
+        const track = this.renderRoot.querySelector('.track') as HTMLElement;
+        const bounds = track.getBoundingClientRect();
+        const ratio = (event.clientX - bounds.left) / bounds.width;
+        return Math.min(DAY_MINUTES, Math.max(0, Math.round(ratio * DAY_MINUTES)));
+    }
+
+    private _startDrag(event: PointerEvent, index: number, mode: 'start' | 'end' | 'move') {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const minutes = this.#minutesFromEvent(event);
+        this.#dragged = false;
+        this.#drag = {
+            index,
+            mode,
+            grabOffset: mode === 'move' ? minutes - parseTime(this.ranges[index].start) : 0,
+        };
+
+        (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+        this.addEventListener('pointermove', this._onDragMove);
+        this.addEventListener('pointerup', this._endDrag);
+        this.addEventListener('pointercancel', this._endDrag);
+    }
+
+    private _onDragMove = (event: PointerEvent) => {
+        if (!this.#drag) return;
+
+        const { index, mode, grabOffset } = this.#drag;
+        const minutes = this.#minutesFromEvent(event);
+        this.#dragged = true;
+
+        // Every one of these clamps against the neighbours, so an overlap cannot be dragged into being.
+        const updated =
+            mode === 'move'
+                ? moveRange(this.ranges, index, minutes - grabOffset, this.snapMinutes)
+                : resizeRange(this.ranges, index, mode, minutes, this.snapMinutes);
+
+        this._commit(updated, index);
+    };
+
+    private _endDrag = () => {
+        this.#drag = null;
+        this.removeEventListener('pointermove', this._onDragMove);
+        this.removeEventListener('pointerup', this._endDrag);
+        this.removeEventListener('pointercancel', this._endDrag);
+    };
+
+    private _onTrackPointerDown = (event: PointerEvent) => {
+        if (event.target !== event.currentTarget) return;
+
+        const created = createRange(
+            this.ranges,
+            this.#minutesFromEvent(event),
+            this.defaultDurationMinutes,
+            this.snapMinutes,
+        );
+
+        if (created) this._commit(created);
+    };
+
+    private _onTrackKeydown = (event: KeyboardEvent) => {
+        if (event.target !== event.currentTarget || event.key !== 'Enter') return;
+
+        const gap = largestGap(this.ranges);
+        if (!gap) return;
+
+        event.preventDefault();
+        const created = createRange(this.ranges, gap.start, this.defaultDurationMinutes, this.snapMinutes);
+        if (created) this._commit(created);
+    };
+
+    private _onBlockKeydown(event: KeyboardEvent, index: number) {
+        const step = this.snapMinutes;
+        const range = this.ranges[index];
+
+        switch (event.key) {
+            case 'Enter':
+            case ' ':
+                event.preventDefault();
+                this._emitEdit(index);
+                return;
+
+            case 'Delete':
+            case 'Backspace':
+                event.preventDefault();
+                this._commit(this.ranges.filter((_, i) => i !== index));
+                return;
+
+            case 'ArrowLeft':
+            case 'ArrowRight': {
+                event.preventDefault();
+                const direction = event.key === 'ArrowLeft' ? -step : step;
+
+                const updated = event.shiftKey
+                    ? resizeRange(this.ranges, index, 'end', parseTime(range.end) + direction, this.snapMinutes)
+                    : moveRange(this.ranges, index, parseTime(range.start) + direction, this.snapMinutes);
+
+                this._commit(updated, index);
+                return;
+            }
+
+            default:
+                return;
+        }
+    }
+
+    private _emitEdit(index: number) {
+        if (this.#dragged) {
+            this.#dragged = false;
+            return;
+        }
+
+        this.dispatchEvent(new CustomEvent('edit-range', { detail: { index }, bubbles: true, composed: true }));
+    }
+
+    /** Publishes a new set of ranges and announces the change for screen readers. */
+    private _commit(ranges: HoursRange[], announceIndex?: number) {
+        this.ranges = ranges;
+
+        if (announceIndex !== undefined && ranges[announceIndex]) {
+            this._announcement = formatRange(ranges[announceIndex], this.use24Hour);
+        }
+
+        this.dispatchEvent(new CustomEvent('change', { detail: { ranges }, bubbles: true, composed: true }));
     }
 
     static styles = css`
@@ -53,6 +204,11 @@ export class OocTimelineElement extends LitElement {
             border: 1px solid var(--uui-color-border);
             border-radius: var(--uui-border-radius);
             background: var(--uui-color-surface);
+        }
+
+        .track:focus-visible {
+            outline: 2px solid var(--uui-color-focus);
+            outline-offset: 1px;
         }
 
         .divider {
@@ -91,6 +247,31 @@ export class OocTimelineElement extends LitElement {
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
+        .grip {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 7px;
+            cursor: ew-resize;
+        }
+
+        .grip.start {
+            left: 0;
+        }
+
+        .grip.end {
+            right: 0;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
     `;
 
     protected _renderBlock(range: HoursRange, index: number) {
@@ -105,7 +286,16 @@ export class OocTimelineElement extends LitElement {
                 data-index=${index}
                 style="left:${this._percent(start)}%;width:${this._percent(end - start)}%"
                 title=${this._accessibleName(range)}
-                aria-label=${this._accessibleName(range)}>
+                aria-label=${this._accessibleName(range)}
+                @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'move')}
+                @click=${() => this._emitEdit(index)}
+                @keydown=${(e: KeyboardEvent) => this._onBlockKeydown(e, index)}>
+                <i
+                    class="grip start"
+                    @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'start')}></i>
+                <i
+                    class="grip end"
+                    @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'end')}></i>
                 ${range.label ? html`<uui-icon name="icon-notepad"></uui-icon>` : ''}
                 ${this.showAppointmentOnly && range.byAppointmentOnly
                     ? html`<uui-icon name="icon-user"></uui-icon>`
@@ -117,12 +307,20 @@ export class OocTimelineElement extends LitElement {
 
     render() {
         return html`
-            <div class="track" part="track">
+            <div
+                class="track"
+                part="track"
+                tabindex="0"
+                role="group"
+                aria-label=${this.trackLabel}
+                @pointerdown=${this._onTrackPointerDown}
+                @keydown=${this._onTrackKeydown}>
                 ${[6, 12, 18].map(
                     (hour) => html`<i class="divider" style="left:${this._percent(hour * 60)}%"></i>`,
                 )}
                 ${this.ranges.map((range, index) => this._renderBlock(range, index))}
             </div>
+            <span class="sr-only" aria-live="polite">${this._announcement}</span>
         `;
     }
 }
