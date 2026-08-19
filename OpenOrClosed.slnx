@@ -15,4 +15,5 @@
   <Project Path="OpenOrClosed/OpenOrClosed.csproj" />
   <!-- <Project Path="OpenOrClosed.Core/OpenOrClosed.Core.csproj" /> -->
   <Project Path="OpenOrClosed.TestSite/OpenOrClosed.TestSite.csproj" />
+  <Project Path="tests/OpenOrClosed.Tests/OpenOrClosed.Tests.csproj" />
 </Solution>

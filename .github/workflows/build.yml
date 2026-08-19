@@ -11,6 +11,7 @@ on:
 env:
   CLIENT_PROJECT: OpenOrClosed/Client
   PLUGIN_PROJECT: OpenOrClosed/OpenOrClosed.csproj
+  TEST_PROJECT: tests/OpenOrClosed.Tests/OpenOrClosed.Tests.csproj
   OUTPUT_PATH: ./build-out/
 
 jobs:
@@ -51,11 +52,11 @@ jobs:
       id: check_prerelease
       run: |
         if [[ ${{ steps.package_version.outputs.version }} =~ ^[0-9]+\.[0-9]+\.[0-9]+-.+$ ]]; then
-            echo Pre-Release detected
-            echo ::set-output name=prerelease::true
+            echo "Pre-Release detected"
+            echo "prerelease=true" >> $GITHUB_OUTPUT
         else
-            echo Pre-Release NOT detected
-            echo ::set-output name=prerelease::false
+            echo "Pre-Release NOT detected"
+            echo "prerelease=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Install Node dependencies
@@ -68,7 +69,10 @@ jobs:
   
     - name: Build
       run: dotnet build ${{ env.PLUGIN_PROJECT }} --configuration Release
-        
+
+    - name: Test
+      run: dotnet test ${{ env.TEST_PROJECT }} --configuration Release
+
     - name: Create the package
       run: dotnet pack ${{ env.PLUGIN_PROJECT }} --no-build --no-restore --configuration Release -o ${{ env.OUTPUT_PATH }}
       

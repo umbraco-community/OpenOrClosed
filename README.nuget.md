@@ -1,6 +1,6 @@
 ﻿# Open or Closed for Umbraco
 
-![Open or Closed Logo](https://raw.githubusercontent.com/YourITGroup/OpenOrClosed/master/GithubFiles/Logo/OpenOrClosed_logo.png)
+![Open or Closed Logo](https://raw.githubusercontent.com/umbraco-community/OpenOrClosed/master/GithubFiles/Logo/OpenOrClosed_logo.png)
 
 Yet another Business Hours package for Umbraco
 

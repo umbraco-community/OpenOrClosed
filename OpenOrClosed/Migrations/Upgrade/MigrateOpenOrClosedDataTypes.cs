@@ -12,6 +12,7 @@ namespace OpenOrClosed.Migrations.Upgrade;
 internal sealed class MigrateOpenOrClosedDataTypes(IMigrationContext context, IKeyValueService keyValueService, IJsonSerializer jsonSerializer, ILogger<MigrateOpenOrClosedDataTypes> logger) : AsyncMigrationBase(context)
 {
     public const string State = "{openorclosed-migrate-datatypes}";
+
     protected override Task MigrateAsync()
     {
         // Look up the pre-migration data for data editor splits
@@ -22,10 +23,26 @@ internal sealed class MigrateOpenOrClosedDataTypes(IMigrationContext context, IK
         }
         DataTypeEditorAliasMigrationData[] migrationData = jsonSerializer.Deserialize<DataTypeEditorAliasMigrationData[]>(dataEditorSplitCollectionData) ?? [];
 
-        // Look for the old Data Type id
-        List<int> mapsEditorIds = [.. migrationData.Where(d => d.EditorUiAlias == SpecialHoursPropertyEditor.EditorAlias ||
-                                                                d.EditorUiAlias == StandardHoursPropertyEditor.EditorAlias)
-                                .Select(d => d.DataTypeId)];
+        // Work out the UI alias each of our Data Types should end up with. Depending on how the
+        // Data Type was upgraded, our alias may have been recorded as the editor alias, the editor
+        // UI alias, or both - so match on either.
+        var uiAliasByDataTypeId = new Dictionary<int, string>();
+        foreach (var data in migrationData)
+        {
+            var uiAlias = ToUiEditorAlias(data.EditorAlias) ?? ToUiEditorAlias(data.EditorUiAlias);
+            if (uiAlias is not null)
+            {
+                uiAliasByDataTypeId[data.DataTypeId] = uiAlias;
+            }
+        }
+
+        // Nothing of ours in this site - bail out before building a query with an empty IN () clause.
+        if (uiAliasByDataTypeId.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        List<int> mapsEditorIds = [.. uiAliasByDataTypeId.Keys];
 
         var sql = Sql()
             .Select<DataTypeDto>()
@@ -39,29 +56,35 @@ internal sealed class MigrateOpenOrClosedDataTypes(IMigrationContext context, IK
 
         foreach (var dataTypeDto in dataTypeDtos)
         {
-            if (logger.IsEnabled(LogLevel.Information))
+            if (uiAliasByDataTypeId.TryGetValue(dataTypeDto.NodeId, out var uiEditorAlias) == false)
             {
-                logger.LogInformation("Updating EditorUiAlias for {alias} with DataTypeId {id}", dataTypeDto.EditorAlias, dataTypeDto.NodeId);
-            }
-            if (dataTypeDto.EditorAlias == SpecialHoursPropertyEditor.EditorAlias)
-            {
-                dataTypeDto.EditorUiAlias = SpecialHoursPropertyEditor.UiEditorAlias;
-            } 
-            else if (dataTypeDto.EditorAlias == StandardHoursPropertyEditor.EditorAlias)
-            {
-                dataTypeDto.EditorUiAlias = StandardHoursPropertyEditor.UiEditorAlias;   
-            }
-            else
-            {
-                logger.LogWarning("Could not determine Property Editor for {alias} with DataTypeId {id}", dataTypeDto.EditorAlias, dataTypeDto.NodeId);
                 continue;
             }
+
+            if (dataTypeDto.EditorUiAlias == uiEditorAlias)
+            {
+                continue;
+            }
+
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Updating EditorUiAlias for {alias} with DataTypeId {id} to {uiAlias}", dataTypeDto.EditorAlias, dataTypeDto.NodeId, uiEditorAlias);
+            }
+
+            dataTypeDto.EditorUiAlias = uiEditorAlias;
             _ = Database.Update(dataTypeDto);
         }
-        
+
         return Task.CompletedTask;
     }
-    
+
+    private static string? ToUiEditorAlias(string? alias) => alias switch
+    {
+        SpecialHoursPropertyEditor.EditorAlias => SpecialHoursPropertyEditor.UiEditorAlias,
+        StandardHoursPropertyEditor.EditorAlias => StandardHoursPropertyEditor.UiEditorAlias,
+        _ => null,
+    };
+
     private class DataTypeEditorAliasMigrationData
     {
         [JsonPropertyName("DataTypeId")]
