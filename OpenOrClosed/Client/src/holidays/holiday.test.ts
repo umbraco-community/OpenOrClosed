@@ -3,6 +3,7 @@ import {
     compareDates,
     emptyHoliday,
     endFollowingStart,
+    holidayConsistencyError,
     formatDateRange,
     isExpired,
     isValidDate,
@@ -298,5 +299,49 @@ describe('endFollowingStart', () => {
         // Nothing to anchor to, so do not destroy a value the editor may still fix.
         expect(endFollowingStart('', '2026-12-27')).toBe('2026-12-27');
         expect(endFollowingStart('nonsense', '2026-12-27')).toBe('2026-12-27');
+    });
+});
+
+describe('holidayConsistencyError', () => {
+    it('is null for a well-formed holiday', () => {
+        expect(holidayConsistencyError(holiday())).toBeNull();
+    });
+
+    it('reports an end before the start', () => {
+        expect(holidayConsistencyError(holiday({ start: '2026-12-25', end: '2026-09-19' }))).toBe(
+            'The end date must be on or after the start date',
+        );
+    });
+
+    it('reports custom mode with no hours', () => {
+        expect(holidayConsistencyError(holiday({ hoursMode: 'custom', hours: [] }))).toBe(
+            'Custom hours need at least one set of hours',
+        );
+    });
+
+    it('stays quiet about a missing name', () => {
+        // Required-field nagging belongs to Save, not to every keystroke.
+        expect(holidayConsistencyError(holiday({ name: '' }))).toBeNull();
+    });
+
+    it('stays quiet while a date is still half-typed', () => {
+        // Nothing to compare yet, and complaining mid-entry would be noise.
+        expect(holidayConsistencyError(holiday({ start: '', end: '2026-12-27' }))).toBeNull();
+        expect(holidayConsistencyError(holiday({ start: '2026-12-25', end: '2026-' }))).toBeNull();
+    });
+});
+
+describe('validateHoliday still owns the required rules', () => {
+    it('reports a missing name that holidayConsistencyError ignores', () => {
+        const missingName = holiday({ name: '' });
+
+        expect(holidayConsistencyError(missingName)).toBeNull();
+        expect(validateHoliday(missingName)).toBe('A name is required');
+    });
+
+    it('reports the same order problem as holidayConsistencyError', () => {
+        const reversed = holiday({ start: '2026-12-25', end: '2026-09-19' });
+
+        expect(validateHoliday(reversed)).toBe(holidayConsistencyError(reversed));
     });
 });

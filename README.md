@@ -114,6 +114,50 @@ A few behaviours worth knowing:
 
 ## Change Log
 
+### Version 17.1.3
+
+**New property editors**
+
+* Added **Weekly Hours** — a recurring Monday-to-Sunday schedule drawn on seven timelines, with
+  drag to move and resize, 15-minute snapping, per-range labels and by-appointment-only flags.
+  Overlaps are impossible: drags clamp at a neighbour's edge, and the pickers in the range sidebar
+  will not offer a time that would collide.
+* Added **Holidays** — named date ranges that override the weekly schedule, with a shared default
+  hours timeline and a per-holiday `Default` / `Closed` / `Custom` override. Holidays can repeat
+  yearly, in which case they never expire.
+* Both editors have value converters with Delivery API support. The weekly converter always
+  returns seven days so a view can loop over a full week; the holidays converter drops finished
+  holidays when **Remove Expired Holidays** is on, while the editor still shows them dimmed and
+  marked *Expired* so a mistyped date can be corrected.
+* Added `OpeningHoursOn` and `IsOpenAt` extension methods in `OpenOrClosed.Core.Extensions`, which
+  apply the correct precedence across the two properties. **Reading the weekly property on its own
+  means your site says it is open on Christmas Day** — see
+  [Combining Weekly Hours and Holidays](#combining-weekly-hours-and-holidays).
+* The existing Standard and Special Business Hours editors are untouched. See
+  [Choosing between them](#choosing-between-them) for which pair to use; there is no migration
+  between the pairs.
+
+**Fixes to the existing editors**
+
+* Added Delivery API support to the Standard and Special Business Hours value converters.
+* Fixed stale date conversion. Date-relative logic ran in `ConvertSourceToIntermediate`, whose
+  result is cached for the lifetime of the element, so times were frozen at whenever the cache was
+  warmed. It now runs in `ConvertIntermediateToObject` with a cache level of `None`.
+* Fixed standard hours anchoring to the wrong week when today is a Sunday.
+* Fixed `HasHours`, which was never set and so was always `false`.
+* Converters return an empty enumerable rather than `null` for an empty value.
+* Fixed `removeOldDates` throwing for any stored form other than a boxed `bool`.
+* Fixed `reversed` mode toggling hours against the raw flag rather than the displayed state.
+* Fixed every time field blanking when **Time Format** was off — a 12-hour `"9:00 AM"` string was
+  being discarded by `<input type="time">`.
+* Editors now re-read `value` and `config` when they change, not only on connect.
+* Fixed special dates being compared as UTC, which dropped today's entry in negative UTC offsets.
+* Per-day validation messages are now rendered rather than computed and thrown away.
+* Fixed the upgrade migration matching only `EditorAlias`, and issuing a query with an empty
+  `IN ()` clause when nothing matched.
+* Fixed the test site's project reference, which contained a space in `"../"` and so never
+  referenced the package at all.
+
 ### Version 17.1.2
 
 * **Breaking Change:** Moved business logic back into main OpenOrClosed website - remove references to `OpenOrClosed.Core` and replace with `OpenOrClosed` nuget package where necessary.  Make sure you clean out obj/bin directories and rebuild.

@@ -6,6 +6,7 @@ import '../timeline/ooc-timeline.element.js';
 import {
     emptyHoliday,
     endFollowingStart,
+    holidayConsistencyError,
     todayIso,
     validateHoliday,
     type HolidayHoursMode,
@@ -85,6 +86,14 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
         } catch {
             // Dismissed - leave the hours as they were.
         }
+    }
+
+    /**
+     * Shown as the editor types. Falls back to the Save-time error so a required-field message
+     * raised by Save is not wiped out by the next keystroke.
+     */
+    private get _visibleError(): string | null {
+        return holidayConsistencyError(this._current) ?? this._error;
     }
 
     private _save() {
@@ -222,7 +231,9 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                               </ooc-timeline>
                           </div>`
                         : ''}
-                    ${this._error ? html`<div class="error">${this._error}</div>` : ''}
+                    ${this._visibleError
+                        ? html`<div class="error">${this._visibleError}</div>`
+                        : ''}
                 </uui-box>
 
                 <uui-button

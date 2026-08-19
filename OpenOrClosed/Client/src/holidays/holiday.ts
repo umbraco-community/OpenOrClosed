@@ -72,19 +72,37 @@ export function emptyHoliday(today: string): Holiday {
     return { name: '', start: today, end: today, repeatYearly: false, hoursMode: 'default', hours: [] };
 }
 
-/** Returns the first problem with `holiday`, or null when it is fit to save. */
-export function validateHoliday(holiday: Holiday): string | null {
-    if (holiday.name.trim().length === 0) return 'A name is required';
-    if (!isValidDate(holiday.start)) return 'A valid start date is required';
-    if (!isValidDate(holiday.end)) return 'A valid end date is required';
-    if (compareDates(holiday.end, holiday.start) < 0) {
+/**
+ * Problems visible without the form being finished: values that contradict each other, rather
+ * than values not yet supplied.
+ *
+ * Safe to show on every keystroke, which is why the required-field rules are not in here - a new
+ * holiday would otherwise open complaining about a name nobody has had a chance to type. Half-typed
+ * dates are ignored for the same reason: there is nothing meaningful to compare yet.
+ */
+export function holidayConsistencyError(holiday: Holiday): string | null {
+    if (
+        isValidDate(holiday.start) &&
+        isValidDate(holiday.end) &&
+        compareDates(holiday.end, holiday.start) < 0
+    ) {
         return 'The end date must be on or after the start date';
     }
+
     if (holiday.hoursMode === 'custom' && holiday.hours.length === 0) {
         return 'Custom hours need at least one set of hours';
     }
 
     return null;
+}
+
+/** Returns the first problem with `holiday`, or null when it is fit to save. */
+export function validateHoliday(holiday: Holiday): string | null {
+    if (holiday.name.trim().length === 0) return 'A name is required';
+    if (!isValidDate(holiday.start)) return 'A valid start date is required';
+    if (!isValidDate(holiday.end)) return 'A valid end date is required';
+
+    return holidayConsistencyError(holiday);
 }
 
 function sanitizeMode(raw: unknown): HolidayHoursMode {

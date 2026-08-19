@@ -57,6 +57,20 @@ no `rangeUnderflow` validator, so these constrain the *picker* while `validateHo
 - [ ] On the last range of the day, **Ends at** caps at 23:59, and **All day** still produces a
       true 24:00 end.
 
+### Live feedback
+
+- [ ] Typing an end date before the start shows the end-date message **immediately**, without
+      pressing Save, and it clears as soon as the dates are back in order.
+- [ ] Opening a **new** holiday shows no error at all — the name is empty but has not been asked
+      for yet.
+- [ ] Pressing Save on a new holiday with no name shows "A name is required", and that message
+      survives the next keystroke in a date field rather than vanishing.
+- [ ] Switching a holiday to **Custom** with no hours shows the custom-hours message immediately.
+- [ ] In the range sidebar, typing an end at or before the start shows the message immediately;
+      so does a range shorter than 15 minutes.
+- [ ] Half-typing a time in the range sidebar does not throw — check the console while clearing and
+      retyping the hours field.
+
 ## Modes
 
 - [ ] `Default` shows a hint naming the default hours, or says the holiday is closed when the

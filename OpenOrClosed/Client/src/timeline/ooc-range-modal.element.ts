@@ -1,6 +1,13 @@
 import { css, customElement, html, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { boundsFor, DAY_MINUTES, formatTime, parseTime, validateRange } from './time-range.js';
+import {
+    boundsFor,
+    DAY_MINUTES,
+    formatTime,
+    isValidTime,
+    parseTime,
+    validateRange,
+} from './time-range.js';
 import type { OocRangeModalData, OocRangeModalValue } from './range-modal.token.js';
 
 /**
@@ -64,6 +71,18 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
             this._start = '00:00';
             this._end = formatTime(DAY_MINUTES);
         }
+    }
+
+    /**
+     * Both fields always hold a value, so unlike the holiday sidebar there is no required-field
+     * rule to nag about and this can run on every keystroke. parseTime throws on malformed input,
+     * hence the isValidTime guard while a time is still being typed.
+     */
+    private get _visibleError(): string | null {
+        if (!this.data || !isValidTime(this._start) || !isValidTime(this._end)) return this._error;
+
+        return validateRange(
+            this.data.ranges, this.data.index, parseTime(this._start), parseTime(this._end));
     }
 
     private _save() {
@@ -168,7 +187,9 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                           </div>`
                         : ''}
 
-                    ${this._error ? html`<div class="error">${this._error}</div>` : ''}
+                    ${this._visibleError
+                        ? html`<div class="error">${this._visibleError}</div>`
+                        : ''}
                 </uui-box>
 
                 <uui-button
