@@ -3,7 +3,13 @@ import { UmbModalBaseElement, umbOpenModal } from '@umbraco-cms/backoffice/modal
 import { formatRange, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
-import { emptyHoliday, todayIso, validateHoliday, type HolidayHoursMode } from './holiday.js';
+import {
+    emptyHoliday,
+    endFollowingStart,
+    todayIso,
+    validateHoliday,
+    type HolidayHoursMode,
+} from './holiday.js';
 import type { OocHolidayModalData, OocHolidayModalValue } from './holiday-modal.token.js';
 
 const MODES: Array<{ value: HolidayHoursMode; label: string }> = [
@@ -57,6 +63,11 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
             hoursMode: this._hoursMode,
             hours: this._hours,
         };
+    }
+
+    private _setStart(value: string) {
+        this._start = value;
+        this._end = endFollowingStart(value, this._end);
     }
 
     private async _editRange(index: number) {
@@ -161,12 +172,17 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                     <div class="field dates">
                         <div>
                             <div class="label">Starts on</div>
+                            <!--
+                              Deliberately unconstrained. A max of _end would stop the start ever
+                              moving past the end, which is exactly the gesture _setStart exists to
+                              handle - the end follows instead.
+                            -->
                             <uui-input
                                 type="date"
                                 .value=${this._start}
                                 label="Starts on"
                                 @change=${(e: Event) =>
-                                    (this._start = (e.target as HTMLInputElement).value)}>
+                                    this._setStart((e.target as HTMLInputElement).value)}>
                             </uui-input>
                         </div>
                         <div>
@@ -174,6 +190,7 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                             <uui-input
                                 type="date"
                                 .value=${this._end}
+                                .min=${this._start}
                                 label="Ends on"
                                 @change=${(e: Event) =>
                                     (this._end = (e.target as HTMLInputElement).value)}>

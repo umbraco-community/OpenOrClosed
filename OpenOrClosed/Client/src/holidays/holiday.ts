@@ -54,6 +54,20 @@ export function isExpired(holiday: Holiday, today: string): boolean {
     return !holiday.repeatYearly && compareDates(holiday.end, today) < 0;
 }
 
+/**
+ * The end date to use after `start` changed: the existing `end` when it still makes sense, or
+ * `start` itself when it has fallen behind or is unusable.
+ *
+ * An unusable `start` leaves `end` untouched - there is nothing to anchor to, and discarding a
+ * value the editor may still be part-way through typing would be worse than leaving it invalid.
+ */
+export function endFollowingStart(start: string, end: string): string {
+    if (!isValidDate(start)) return end;
+    if (!isValidDate(end)) return start;
+
+    return compareDates(end, start) < 0 ? start : end;
+}
+
 export function emptyHoliday(today: string): Holiday {
     return { name: '', start: today, end: today, repeatYearly: false, hoursMode: 'default', hours: [] };
 }

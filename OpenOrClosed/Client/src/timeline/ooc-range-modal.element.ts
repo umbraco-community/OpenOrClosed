@@ -1,6 +1,6 @@
 import { css, customElement, html, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { DAY_MINUTES, formatTime, parseTime, validateRange } from './time-range.js';
+import { boundsFor, DAY_MINUTES, formatTime, parseTime, validateRange } from './time-range.js';
 import type { OocRangeModalData, OocRangeModalValue } from './range-modal.token.js';
 
 /**
@@ -31,6 +31,20 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
         this._label = range.label ?? '';
         this._byAppointmentOnly = range.byAppointmentOnly;
         this.#seeded = true;
+    }
+
+    /**
+     * How far this range may be dragged before it would touch a neighbour. Feeds min/max on the
+     * inputs so the pickers cannot offer an overlap in the first place.
+     */
+    private get _bounds(): { min: string; max: string } {
+        const bounds = boundsFor(this.data?.ranges ?? [], this.data?.index ?? 0);
+
+        return {
+            min: formatTime(bounds.min),
+            // A native time input rejects "24:00"; the All day toggle owns the real end of day.
+            max: formatTime(Math.min(bounds.max, DAY_MINUTES - 1)),
+        };
     }
 
     /** All day is only offered when this is the day's only range - it would conflict with any other. */
@@ -104,6 +118,8 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                         <uui-input
                             type="time"
                             .value=${this._start}
+                            .min=${this._bounds.min}
+                            .max=${this._bounds.max}
                             label="Starts at"
                             @change=${(e: Event) => (this._start = (e.target as HTMLInputElement).value)}>
                         </uui-input>
@@ -114,6 +130,8 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                         <uui-input
                             type="time"
                             .value=${this._end === formatTime(DAY_MINUTES) ? '23:59' : this._end}
+                            .min=${this._start}
+                            .max=${this._bounds.max}
                             label="Ends at"
                             @change=${(e: Event) => (this._end = (e.target as HTMLInputElement).value)}>
                         </uui-input>

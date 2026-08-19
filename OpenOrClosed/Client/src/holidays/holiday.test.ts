@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     compareDates,
     emptyHoliday,
+    endFollowingStart,
     formatDateRange,
     isExpired,
     isValidDate,
@@ -269,5 +270,33 @@ describe('formatDateRange', () => {
         expect(formatDateRange(holiday({ start: '2026-12-27', end: '2027-01-02' }))).toBe(
             '2026-12-27 – 2027-01-02',
         );
+    });
+});
+
+describe('endFollowingStart', () => {
+    it('leaves an end that is already on or after the start alone', () => {
+        expect(endFollowingStart('2026-12-25', '2026-12-27')).toBe('2026-12-27');
+        expect(endFollowingStart('2026-12-25', '2026-12-25')).toBe('2026-12-25');
+    });
+
+    it('snaps an end that now falls before the start', () => {
+        // The reported case: start moved to 25/12 while the end still read 19/09.
+        expect(endFollowingStart('2026-12-25', '2026-09-19')).toBe('2026-12-25');
+    });
+
+    it('snaps across a year boundary', () => {
+        expect(endFollowingStart('2027-01-05', '2026-12-30')).toBe('2027-01-05');
+    });
+
+    it('adopts the start when the end is missing or unusable', () => {
+        expect(endFollowingStart('2026-12-25', '')).toBe('2026-12-25');
+        expect(endFollowingStart('2026-12-25', 'nonsense')).toBe('2026-12-25');
+        expect(endFollowingStart('2026-12-25', '2026-02-29')).toBe('2026-12-25');
+    });
+
+    it('leaves the end alone when the start itself is unusable', () => {
+        // Nothing to anchor to, so do not destroy a value the editor may still fix.
+        expect(endFollowingStart('', '2026-12-27')).toBe('2026-12-27');
+        expect(endFollowingStart('nonsense', '2026-12-27')).toBe('2026-12-27');
     });
 });

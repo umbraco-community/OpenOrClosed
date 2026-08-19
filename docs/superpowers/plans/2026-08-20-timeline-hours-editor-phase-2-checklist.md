@@ -35,6 +35,28 @@ Automated state at the time of writing: 147 C# tests, 105 TypeScript tests, `tsc
 - [ ] Remove deletes that row and no other — check with three rows, removing the middle one.
 - [ ] With Time Format off, the pill and the custom timeline read in 12-hour form.
 
+## Date and time constraints
+
+Added after the phase 2 build. `uui-input` forwards `min`/`max` to the native input but registers
+no `rangeUnderflow` validator, so these constrain the *picker* while `validateHoliday` /
+`validateRange` remain the backstop for typed values.
+
+- [ ] In the holiday sidebar, opening the **Ends on** picker offers no date before the start —
+      the reported case was Starts on 25/12/2026 with Ends on freely settable to 19/09/2026.
+- [ ] **Starts on** is *not* constrained by the end. Moving the start past the end is allowed and
+      the end follows it. Set 25/12, then 20/12 → end stays; then set start to 27/12 → end becomes
+      27/12.
+- [ ] A start of 27/12 with a repeating holiday ending 02/01 the following year still saves — the
+      year, not just the day, is compared.
+- [ ] Typing an out-of-range end by hand still shows the end-date message on Save rather than
+      silently saving.
+- [ ] In the range sidebar, **Ends at** offers no time before **Starts at**.
+- [ ] With three ranges on a day, opening the middle one: **Starts at** offers nothing before the
+      previous range's end, and **Ends at** nothing after the next range's start — so the
+      "overlaps another range" error is unreachable from the pickers.
+- [ ] On the last range of the day, **Ends at** caps at 23:59, and **All day** still produces a
+      true 24:00 end.
+
 ## Modes
 
 - [ ] `Default` shows a hint naming the default hours, or says the holiday is closed when the
