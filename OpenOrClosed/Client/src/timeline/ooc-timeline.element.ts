@@ -49,6 +49,10 @@ export class OocTimelineElement extends LitElement {
     @state()
     private _announcement = '';
 
+    /** Which block is mid-drag. Pointer capture drops :hover, so the grips need this to stay visible. */
+    @state()
+    private _dragIndex: number | null = null;
+
     #drag: { index: number; mode: 'start' | 'end' | 'move'; grabOffset: number } | null = null;
 
     /** A drag ends with a click. Without this, letting go would also open the dialog. */
@@ -79,6 +83,7 @@ export class OocTimelineElement extends LitElement {
 
         const minutes = this.#minutesFromEvent(event);
         this.#dragged = false;
+        this._dragIndex = index;
         this.#drag = {
             index,
             mode,
@@ -109,6 +114,7 @@ export class OocTimelineElement extends LitElement {
 
     private _endDrag = () => {
         this.#drag = null;
+        this._dragIndex = null;
         this.removeEventListener('pointermove', this._onDragMove);
         this.removeEventListener('pointerup', this._endDrag);
         this.removeEventListener('pointercancel', this._endDrag);
@@ -190,7 +196,7 @@ export class OocTimelineElement extends LitElement {
             this._announcement = formatRange(ranges[announceIndex], this.use24Hour);
         }
 
-        this.dispatchEvent(new CustomEvent('change', { detail: { ranges }, bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('change', { detail: { ranges } }));
     }
 
     static styles = css`
@@ -201,6 +207,7 @@ export class OocTimelineElement extends LitElement {
         .track {
             position: relative;
             height: 40px;
+            cursor: pointer;
             border: 1px solid var(--uui-color-border);
             border-radius: var(--uui-border-radius);
             background: var(--uui-color-surface);
@@ -248,11 +255,12 @@ export class OocTimelineElement extends LitElement {
             text-overflow: ellipsis;
         }
 
+        /* The strip stays the hit area; min() shrinks it on short ranges so the middle is still grabbable. */
         .grip {
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 7px;
+            width: min(7px, 30%);
             cursor: ew-resize;
         }
 
@@ -262,6 +270,27 @@ export class OocTimelineElement extends LitElement {
 
         .grip.end {
             right: 0;
+        }
+
+        /* Visual only - a hint that the edges resize. Keyboard resizing is Shift+Arrow on the block. */
+        .grip::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            left: 50%;
+            width: min(3px, 100%);
+            transform: translateX(-50%);
+            border-radius: 3px;
+            background: var(--uui-color-selected);
+            opacity: 0;
+            transition: opacity 80ms ease-in-out;
+        }
+
+        .block:hover .grip::after,
+        .block:focus-visible .grip::after,
+        .block.dragging .grip::after {
+            opacity: 0.6;
         }
 
         .sr-only {
@@ -281,11 +310,10 @@ export class OocTimelineElement extends LitElement {
         return html`
             <button
                 type="button"
-                class="block"
+                class="block ${this._dragIndex === index ? 'dragging' : ''}"
                 part="block"
                 data-index=${index}
                 style="left:${this._percent(start)}%;width:${this._percent(end - start)}%"
-                title=${this._accessibleName(range)}
                 aria-label=${this._accessibleName(range)}
                 @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'move')}
                 @click=${() => this._emitEdit(index)}
@@ -296,11 +324,13 @@ export class OocTimelineElement extends LitElement {
                 <i
                     class="grip end"
                     @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'end')}></i>
-                ${range.label ? html`<uui-icon name="icon-notepad"></uui-icon>` : ''}
+                ${range.label ? html`<uui-icon name="icon-notepad" title=${range.label}></uui-icon>` : ''}
                 ${this.showAppointmentOnly && range.byAppointmentOnly
-                    ? html`<uui-icon name="icon-user"></uui-icon>`
+                    ? html`<uui-icon name="icon-user" title="By appointment only"></uui-icon>`
                     : ''}
-                <span class="times">${formatRange(range, this.use24Hour)}</span>
+                <span class="times" title=${this._accessibleName(range)}
+                    >${formatRange(range, this.use24Hour)}</span
+                >
             </button>
         `;
     }
