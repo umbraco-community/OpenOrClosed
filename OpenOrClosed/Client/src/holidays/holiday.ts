@@ -23,6 +23,17 @@ export interface HolidaySchedule {
     holidays: Holiday[];
 }
 
+/**
+ * Why a holiday is not acceptable. A code rather than a sentence, because this module is DOM-free
+ * and cannot reach Umbraco's localisation - the element translates it.
+ */
+export type HolidayError =
+    | 'nameRequired'
+    | 'startDateInvalid'
+    | 'endDateInvalid'
+    | 'endBeforeStart'
+    | 'customNeedsHours';
+
 /** Today as ISO `YYYY-MM-DD` in the browser's own timezone, not UTC. */
 export function todayIso(): string {
     const now = new Date();
@@ -80,27 +91,27 @@ export function emptyHoliday(today: string): Holiday {
  * holiday would otherwise open complaining about a name nobody has had a chance to type. Half-typed
  * dates are ignored for the same reason: there is nothing meaningful to compare yet.
  */
-export function holidayConsistencyError(holiday: Holiday): string | null {
+export function holidayConsistencyError(holiday: Holiday): HolidayError | null {
     if (
         isValidDate(holiday.start) &&
         isValidDate(holiday.end) &&
         compareDates(holiday.end, holiday.start) < 0
     ) {
-        return 'The end date must be on or after the start date';
+        return 'endBeforeStart';
     }
 
     if (holiday.hoursMode === 'custom' && holiday.hours.length === 0) {
-        return 'Custom hours need at least one set of hours';
+        return 'customNeedsHours';
     }
 
     return null;
 }
 
 /** Returns the first problem with `holiday`, or null when it is fit to save. */
-export function validateHoliday(holiday: Holiday): string | null {
-    if (holiday.name.trim().length === 0) return 'A name is required';
-    if (!isValidDate(holiday.start)) return 'A valid start date is required';
-    if (!isValidDate(holiday.end)) return 'A valid end date is required';
+export function validateHoliday(holiday: Holiday): HolidayError | null {
+    if (holiday.name.trim().length === 0) return 'nameRequired';
+    if (!isValidDate(holiday.start)) return 'startDateInvalid';
+    if (!isValidDate(holiday.end)) return 'endDateInvalid';
 
     return holidayConsistencyError(holiday);
 }

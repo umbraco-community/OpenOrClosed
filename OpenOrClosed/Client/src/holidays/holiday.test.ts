@@ -94,17 +94,17 @@ describe('validateHoliday', () => {
     });
 
     it('requires a name', () => {
-        expect(validateHoliday(holiday({ name: '   ' }))).toBe('A name is required');
+        expect(validateHoliday(holiday({ name: '   ' }))).toBe('nameRequired');
     });
 
     it('requires valid dates', () => {
-        expect(validateHoliday(holiday({ start: '' }))).toBe('A valid start date is required');
-        expect(validateHoliday(holiday({ end: 'nope' }))).toBe('A valid end date is required');
+        expect(validateHoliday(holiday({ start: '' }))).toBe('startDateInvalid');
+        expect(validateHoliday(holiday({ end: 'nope' }))).toBe('endDateInvalid');
     });
 
     it('requires the end on or after the start', () => {
         expect(validateHoliday(holiday({ start: '2026-08-22', end: '2026-08-20' }))).toBe(
-            'The end date must be on or after the start date',
+            'endBeforeStart',
         );
     });
 
@@ -114,7 +114,7 @@ describe('validateHoliday', () => {
 
     it('requires at least one range when the mode is custom', () => {
         expect(validateHoliday(holiday({ hoursMode: 'custom', hours: [] }))).toBe(
-            'Custom hours need at least one set of hours',
+            'customNeedsHours',
         );
     });
 
@@ -309,13 +309,13 @@ describe('holidayConsistencyError', () => {
 
     it('reports an end before the start', () => {
         expect(holidayConsistencyError(holiday({ start: '2026-12-25', end: '2026-09-19' }))).toBe(
-            'The end date must be on or after the start date',
+            'endBeforeStart',
         );
     });
 
     it('reports custom mode with no hours', () => {
         expect(holidayConsistencyError(holiday({ hoursMode: 'custom', hours: [] }))).toBe(
-            'Custom hours need at least one set of hours',
+            'customNeedsHours',
         );
     });
 
@@ -336,7 +336,7 @@ describe('validateHoliday still owns the required rules', () => {
         const missingName = holiday({ name: '' });
 
         expect(holidayConsistencyError(missingName)).toBeNull();
-        expect(validateHoliday(missingName)).toBe('A name is required');
+        expect(validateHoliday(missingName)).toBe('nameRequired');
     });
 
     it('reports the same order problem as holidayConsistencyError', () => {
