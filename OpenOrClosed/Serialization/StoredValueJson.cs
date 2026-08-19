@@ -23,6 +23,10 @@ internal static class StoredValueJson
         options.Converters.Add(new BareTimeDateTimeJsonConverter());
         options.Converters.Add(new NullableBareTimeConverterFactory());
 
+        // Type-specific on purpose. A blanket JsonStringEnumConverter would also catch
+        // WeeklyHoursDay.Day, silently changing the Delivery API from "day":2 to "day":"Tuesday".
+        options.Converters.Add(new HolidayHoursModeJsonConverter());
+
         return options;
     }
 
