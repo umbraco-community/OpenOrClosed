@@ -1,11 +1,11 @@
 ﻿# Open or Closed for Umbraco
 
-![Open or Closed Logo](https://raw.githubusercontent.com/YourITGroup/OpenOrClosed/master/GithubFiles/Logo/OpenOrClosed_logo.png)
+![Open or Closed Logo](https://raw.githubusercontent.com/umbraco-community/OpenOrClosed/master/GithubFiles/Logo/OpenOrClosed_logo.png)
 
 Yet another Business Hours package for Umbraco
 
-[![OpenOrClosed - CI](https://github.com/YourITGroup/OpenOrClosed/actions/workflows/build.yml/badge.svg)](https://github.com/YourITGroup/OpenOrClosed/actions/workflows/build.yml)
-[![OpenOrClosed - Release](https://github.com/YourITGroup/OpenOrClosed/actions/workflows/release.yml/badge.svg)](https://github.com/YourITGroup/OpenOrClosed/actions/workflows/release.yml)
+[![OpenOrClosed - CI](https://github.com/umbraco-community/OpenOrClosed/actions/workflows/build.yml/badge.svg)](https://github.com/umbraco-community/OpenOrClosed/actions/workflows/build.yml)
+[![OpenOrClosed - Release](https://github.com/umbraco-community/OpenOrClosed/actions/workflows/release.yml/badge.svg)](https://github.com/umbraco-community/OpenOrClosed/actions/workflows/release.yml)
 
 Nuget Packages:
 
