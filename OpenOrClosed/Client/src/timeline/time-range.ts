@@ -184,22 +184,36 @@ export function createRange(
 }
 
 /** Checks a typed range. Dragging cannot produce these, but the dialog can. */
+/**
+ * Why a range is not acceptable. A code rather than a sentence, because this module is DOM-free
+ * and cannot reach Umbraco's localisation - the element translates it.
+ *
+ * Named HoursRangeProblem, not RangeError: that is a JS built-in which parseTime throws.
+ */
+export type HoursRangeProblem =
+    | { code: 'outsideDay' }
+    | { code: 'endNotAfterStart' }
+    | { code: 'tooShort'; minutes: number }
+    | { code: 'overlaps' };
+
 export function validateRange(
     ranges: HoursRange[],
     index: number,
     startMinutes: number,
     endMinutes: number,
-): string | null {
+): HoursRangeProblem | null {
     if (startMinutes < 0 || endMinutes > DAY_MINUTES) {
-        return 'Hours must fall within the day.';
+        return { code: 'outsideDay' };
     }
 
     if (endMinutes <= startMinutes) {
-        return 'The end time must be after the start time.';
+        return { code: 'endNotAfterStart' };
     }
 
     if (endMinutes - startMinutes < MIN_RANGE_MINUTES) {
-        return `Hours must be at least ${MIN_RANGE_MINUTES} minutes long.`;
+        // The minimum travels with the code so the message can be phrased without the
+        // dictionary knowing MIN_RANGE_MINUTES.
+        return { code: 'tooShort', minutes: MIN_RANGE_MINUTES };
     }
 
     const overlaps = ranges.some(
@@ -207,7 +221,7 @@ export function validateRange(
             i !== index && startMinutes < parseTime(other.end) && endMinutes > parseTime(other.start),
     );
 
-    return overlaps ? 'These hours overlap another set on the same day.' : null;
+    return overlaps ? { code: 'overlaps' } : null;
 }
 
 /** Turns a persisted value of unknown shape into ranges we can rely on. */

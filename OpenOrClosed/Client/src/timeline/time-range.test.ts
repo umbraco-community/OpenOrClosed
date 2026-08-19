@@ -239,15 +239,20 @@ describe('validateRange', () => {
     });
 
     it('rejects an end at or before the start', () => {
-        expect(validateRange(ranges, 0, 10 * 60, 10 * 60)).toMatch(/after/i);
+        expect(validateRange(ranges, 0, 10 * 60, 10 * 60)).toEqual({ code: 'endNotAfterStart' });
     });
 
-    it('rejects a range shorter than the minimum', () => {
-        expect(validateRange(ranges, 0, 9 * 60, 9 * 60 + 5)).toMatch(/15 minutes/i);
+    it('rejects a range shorter than the minimum, and reports the minimum', () => {
+        // The code carries the number so the dictionary does not need to know
+        // MIN_RANGE_MINUTES to phrase the message.
+        expect(validateRange(ranges, 0, 9 * 60, 9 * 60 + 5)).toEqual({
+            code: 'tooShort',
+            minutes: MIN_RANGE_MINUTES,
+        });
     });
 
     it('rejects an overlap with another range', () => {
-        expect(validateRange(ranges, 0, 9 * 60, 14 * 60)).toMatch(/overlap/i);
+        expect(validateRange(ranges, 0, 9 * 60, 14 * 60)).toEqual({ code: 'overlaps' });
     });
 
     it('ignores the range being edited when checking overlaps', () => {
@@ -255,7 +260,8 @@ describe('validateRange', () => {
     });
 
     it('rejects a range leaving the day', () => {
-        expect(validateRange(ranges, 0, 9 * 60, DAY_MINUTES + 60)).toMatch(/day/i);
+        expect(validateRange(ranges, 0, 9 * 60, DAY_MINUTES + 60)).toEqual({ code: 'outsideDay' });
+        expect(validateRange(ranges, 0, -30, 11 * 60)).toEqual({ code: 'outsideDay' });
     });
 });
 
