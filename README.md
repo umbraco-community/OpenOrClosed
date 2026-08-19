@@ -114,9 +114,7 @@ A few behaviours worth knowing:
 
 ## Change Log
 
-### Version 17.1.3
-
-**New property editors**
+### Version 17.2.0
 
 * Added **Weekly Hours** — a recurring Monday-to-Sunday schedule drawn on seven timelines, with
   drag to move and resize, 15-minute snapping, per-range labels and by-appointment-only flags.
@@ -137,7 +135,7 @@ A few behaviours worth knowing:
   [Choosing between them](#choosing-between-them) for which pair to use; there is no migration
   between the pairs.
 
-**Fixes to the existing editors**
+### Version 17.1.3
 
 * Added Delivery API support to the Standard and Special Business Hours value converters.
 * Fixed stale date conversion. Date-relative logic ran in `ConvertSourceToIntermediate`, whose
