@@ -1,3 +1,4 @@
+import { manifests as holidays } from './holidays/manifest'
 import { manifests as specialHours } from './special-hours/manifest'
 import { manifests as rangeModal } from './timeline/manifest'
 import { manifests as standardHours } from './standard-hours/manifest'
@@ -10,6 +11,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   ...standardHours,
   ...specialHours,
   ...weeklyHours,
+  ...holidays,
   ...rangeModal,
   ...timeInput
 ];
