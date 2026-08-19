@@ -384,3 +384,6 @@ FodyWeavers.xsd
 OpenOrClosed.TestSite/appsettings-schema.*
 OpenOrClosed.TestSite/umbraco-package-schema.json
 *.csproj.lscache
+
+# Superpowers brainstorming session files
+.superpowers/
