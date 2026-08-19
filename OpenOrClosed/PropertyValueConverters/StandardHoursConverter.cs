@@ -1,12 +1,13 @@
 ﻿using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.PropertyEditors.DeliveryApi;
 using Newtonsoft.Json;
 using OpenOrClosed.Core.ViewModels;
 using OpenOrClosed.Core.PropertyEditors;
 
 namespace OpenOrClosed.Core.PropertyValueConverters;
 
-public class StandardHoursConverter : PropertyValueConverterBase
+public class StandardHoursConverter : PropertyValueConverterBase, IDeliveryApiPropertyValueConverter
 {
     public override bool IsConverter(IPublishedPropertyType propertyType)
         => StandardHoursPropertyEditor.EditorAlias == propertyType.EditorAlias;
@@ -54,4 +55,13 @@ public class StandardHoursConverter : PropertyValueConverterBase
 
         return data;
     }
+
+    public PropertyCacheLevel GetDeliveryApiPropertyCacheLevel(IPublishedPropertyType propertyType)
+        => GetPropertyCacheLevel(propertyType);
+
+    public Type GetDeliveryApiPropertyValueType(IPublishedPropertyType propertyType)
+        => GetPropertyValueType(propertyType);
+
+    public object? ConvertIntermediateToDeliveryApiObject(IPublishedElement owner, IPublishedPropertyType propertyType, PropertyCacheLevel referenceCacheLevel, object? inter, bool preview, bool expanding)
+        => inter as IEnumerable<DaysViewModel> ?? Enumerable.Empty<DaysViewModel>();
 }
