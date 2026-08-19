@@ -123,3 +123,111 @@ export function moveRange(
 
     return replaceAt(ranges, index, clamped, clamped + duration);
 }
+
+interface Gap {
+    start: number;
+    end: number;
+}
+
+function gaps(ranges: HoursRange[]): Gap[] {
+    const found: Gap[] = [];
+    let cursor = 0;
+
+    for (const range of ranges) {
+        const start = parseTime(range.start);
+        if (start > cursor) found.push({ start: cursor, end: start });
+        cursor = parseTime(range.end);
+    }
+
+    if (cursor < DAY_MINUTES) found.push({ start: cursor, end: DAY_MINUTES });
+
+    return found;
+}
+
+/** The free stretch containing this point, or null if it falls inside a range. */
+export function gapAt(ranges: HoursRange[], minutes: number): Gap | null {
+    return gaps(ranges).find((gap) => minutes >= gap.start && minutes < gap.end) ?? null;
+}
+
+export function largestGap(ranges: HoursRange[]): Gap | null {
+    return gaps(ranges).reduce<Gap | null>(
+        (widest, gap) =>
+            gap.end - gap.start >= MIN_RANGE_MINUTES &&
+            (widest === null || gap.end - gap.start > widest.end - widest.start)
+                ? gap
+                : widest,
+        null,
+    );
+}
+
+/**
+ * Adds a range beginning at the given point, running for the default duration but never past the
+ * end of the gap it lands in. Returns null when there is no room.
+ */
+export function createRange(
+    ranges: HoursRange[],
+    atMinutes: number,
+    durationMinutes: number,
+    step: number,
+): HoursRange[] | null {
+    const gap = gapAt(ranges, atMinutes);
+    if (gap === null || gap.end - gap.start < MIN_RANGE_MINUTES) return null;
+
+    const start = Math.min(Math.max(snap(atMinutes, step), gap.start), gap.end - MIN_RANGE_MINUTES);
+    const end = Math.min(start + durationMinutes, gap.end);
+    if (end - start < MIN_RANGE_MINUTES) return null;
+
+    return sortRanges([
+        ...ranges,
+        { start: formatTime(start), end: formatTime(end), label: null, byAppointmentOnly: false },
+    ]);
+}
+
+/** Checks a typed range. Dragging cannot produce these, but the dialog can. */
+export function validateRange(
+    ranges: HoursRange[],
+    index: number,
+    startMinutes: number,
+    endMinutes: number,
+): string | null {
+    if (startMinutes < 0 || endMinutes > DAY_MINUTES) {
+        return 'Hours must fall within the day.';
+    }
+
+    if (endMinutes <= startMinutes) {
+        return 'The end time must be after the start time.';
+    }
+
+    if (endMinutes - startMinutes < MIN_RANGE_MINUTES) {
+        return `Hours must be at least ${MIN_RANGE_MINUTES} minutes long.`;
+    }
+
+    const overlaps = ranges.some(
+        (other, i) =>
+            i !== index && startMinutes < parseTime(other.end) && endMinutes > parseTime(other.start),
+    );
+
+    return overlaps ? 'These hours overlap another set on the same day.' : null;
+}
+
+/** Turns a persisted value of unknown shape into ranges we can rely on. */
+export function sanitizeRanges(raw: unknown): HoursRange[] {
+    if (!Array.isArray(raw)) return [];
+
+    const usable = raw.filter((entry): entry is HoursRange => {
+        if (entry === null || typeof entry !== 'object') return false;
+
+        const { start, end } = entry as Partial<HoursRange>;
+        if (typeof start !== 'string' || typeof end !== 'string') return false;
+        if (!isValidTime(start) || !isValidTime(end)) return false;
+
+        return parseTime(end) > parseTime(start);
+    });
+
+    return sortRanges(usable).map((entry) => ({
+        start: entry.start,
+        end: entry.end,
+        label: typeof entry.label === 'string' && entry.label.length > 0 ? entry.label : null,
+        byAppointmentOnly: entry.byAppointmentOnly === true,
+    }));
+}

@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
     boundsFor,
+    createRange,
     DAY_MINUTES,
     formatDisplay,
     formatTime,
+    gapAt,
     isValidTime,
+    largestGap,
     MIN_RANGE_MINUTES,
     moveRange,
     parseTime,
     resizeRange,
+    sanitizeRanges,
     snap,
     sortRanges,
+    validateRange,
     type HoursRange,
 } from './time-range.js';
 
@@ -155,5 +160,123 @@ describe('sortRanges', () => {
     it('orders by start time', () => {
         const sorted = sortRanges([range('13:00', '17:00'), range('09:00', '12:00')]);
         expect(sorted.map((r) => r.start)).toEqual(['09:00', '13:00']);
+    });
+});
+
+describe('gapAt', () => {
+    const ranges = [range('09:00', '12:00'), range('13:00', '17:00')];
+
+    it('finds the gap between two ranges', () => {
+        expect(gapAt(ranges, 12 * 60 + 30)).toEqual({ start: 720, end: 780 });
+    });
+
+    it('finds the gap before the first range', () => {
+        expect(gapAt(ranges, 60)).toEqual({ start: 0, end: 540 });
+    });
+
+    it('finds the gap after the last range', () => {
+        expect(gapAt(ranges, 20 * 60)).toEqual({ start: 1020, end: DAY_MINUTES });
+    });
+
+    it('returns null inside an existing range', () => {
+        expect(gapAt(ranges, 10 * 60)).toBeNull();
+    });
+
+    it('treats an empty day as one whole gap', () => {
+        expect(gapAt([], 10 * 60)).toEqual({ start: 0, end: DAY_MINUTES });
+    });
+});
+
+describe('largestGap', () => {
+    it('picks the widest free stretch', () => {
+        // Midnight to 09:00 is 9 hours; 17:00 to midnight is only 7.
+        expect(largestGap([range('09:00', '10:00'), range('11:00', '17:00')]))
+            .toEqual({ start: 0, end: 540 });
+    });
+
+    it('ignores a gap too small to hold a range', () => {
+        expect(largestGap([range('00:00', '23:55')])).toBeNull();
+    });
+
+    it('returns null on a full day', () => {
+        expect(largestGap([range('00:00', '24:00')])).toBeNull();
+    });
+});
+
+describe('createRange', () => {
+    it('starts at the click point and runs for the default duration', () => {
+        const created = createRange([], 9 * 60, 8 * 60, 15)!;
+        expect(created).toHaveLength(1);
+        expect(created[0]).toEqual({ start: '09:00', end: '17:00', label: null, byAppointmentOnly: false });
+    });
+
+    it('truncates to fit the gap it was dropped into', () => {
+        const ranges = [range('09:00', '12:00'), range('13:00', '17:00')];
+        const created = createRange(ranges, 12 * 60, 8 * 60, 15)!;
+        expect(created[1]).toMatchObject({ start: '12:00', end: '13:00' });
+    });
+
+    it('inserts in sorted order', () => {
+        const created = createRange([range('13:00', '17:00')], 9 * 60, 60, 15)!;
+        expect(created.map((r) => r.start)).toEqual(['09:00', '13:00']);
+    });
+
+    it('refuses when the gap is smaller than the minimum', () => {
+        const ranges = [range('09:00', '12:00'), range('12:10', '17:00')];
+        expect(createRange(ranges, 12 * 60 + 5, 60, 5)).toBeNull();
+    });
+
+    it('refuses inside an existing range', () => {
+        expect(createRange([range('09:00', '17:00')], 10 * 60, 60, 15)).toBeNull();
+    });
+});
+
+describe('validateRange', () => {
+    const ranges = [range('09:00', '12:00'), range('13:00', '17:00')];
+
+    it('accepts a range that fits', () => {
+        expect(validateRange(ranges, 0, 9 * 60, 11 * 60)).toBeNull();
+    });
+
+    it('rejects an end at or before the start', () => {
+        expect(validateRange(ranges, 0, 10 * 60, 10 * 60)).toMatch(/after/i);
+    });
+
+    it('rejects a range shorter than the minimum', () => {
+        expect(validateRange(ranges, 0, 9 * 60, 9 * 60 + 5)).toMatch(/15 minutes/i);
+    });
+
+    it('rejects an overlap with another range', () => {
+        expect(validateRange(ranges, 0, 9 * 60, 14 * 60)).toMatch(/overlap/i);
+    });
+
+    it('ignores the range being edited when checking overlaps', () => {
+        expect(validateRange(ranges, 1, 12 * 60, 18 * 60)).toBeNull();
+    });
+
+    it('rejects a range leaving the day', () => {
+        expect(validateRange(ranges, 0, 9 * 60, DAY_MINUTES + 60)).toMatch(/day/i);
+    });
+});
+
+describe('sanitizeRanges', () => {
+    it('drops entries that are not usable and sorts the rest', () => {
+        const raw = [
+            { start: '13:00', end: '17:00' },
+            { start: 'nope', end: '10:00' },
+            null,
+            { start: '09:00', end: '12:00', label: 'Morning', byAppointmentOnly: true },
+            { start: '18:00', end: '17:00' },
+        ];
+
+        expect(sanitizeRanges(raw)).toEqual([
+            { start: '09:00', end: '12:00', label: 'Morning', byAppointmentOnly: true },
+            { start: '13:00', end: '17:00', label: null, byAppointmentOnly: false },
+        ]);
+    });
+
+    it('returns an empty array for anything that is not an array', () => {
+        expect(sanitizeRanges(undefined)).toEqual([]);
+        expect(sanitizeRanges('nope')).toEqual([]);
     });
 });
