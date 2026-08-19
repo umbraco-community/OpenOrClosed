@@ -1,25 +1,24 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace OpenOrClosed.Core.ViewModels;
 
-[DataContract]
 public class SpecialDaysViewModel
 {
-    [DataMember(Name = "date")]
+    [JsonPropertyName("date")]
     public DateTime Date { get; set; }
 
-    [DataMember(Name = "isOpen")]
+    [JsonPropertyName("isOpen")]
     public bool IsOpen { get; set; }
 
-    [DataMember(Name = "openComment")]
+    [JsonPropertyName("openComment")]
     public string? OpenComment { get; set; }
 
-    [DataMember(Name = "closedComment")]
+    [JsonPropertyName("closedComment")]
     public string? ClosedComment { get; set; }
 
-    [DataMember(Name = "hasHours")]
+    [JsonPropertyName("hasHours")]
     public bool HasHours { get; set; }
 
-    [DataMember(Name = "hoursOfBusiness")]
+    [JsonPropertyName("hoursOfBusiness")]
     public List<HoursViewModel> HoursOfBusiness { get; set; } = [];
 }

@@ -1,19 +1,18 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace OpenOrClosed.Core.ViewModels;
 
-[DataContract]
 public class HoursViewModel
 {
-    [DataMember(Name = "opensAt")]
+    [JsonPropertyName("opensAt")]
     public DateTime? OpensAt { get; set; }
 
-    [DataMember(Name = "closesAt")]
+    [JsonPropertyName("closesAt")]
     public DateTime? ClosesAt { get; set; }
 
-    [DataMember(Name = "comment")]
+    [JsonPropertyName("comment")]
     public string? Comment { get; set; }
 
-    [DataMember(Name = "byAppointmentOnly")]
+    [JsonPropertyName("byAppointmentOnly")]
     public bool ByAppointmentOnly { get; set; } = false;
 }
