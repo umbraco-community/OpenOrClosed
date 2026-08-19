@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include=".. /OpenOrClosed/OpenOrClosed.csproj" />
+    <ProjectReference Include="../OpenOrClosed/OpenOrClosed.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

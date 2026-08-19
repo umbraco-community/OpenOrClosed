@@ -7,7 +7,7 @@
     "ImageUrl": "https://our.umbraco.com/media/upload/87499f6e-4497-4cb0-a2b6-bf03e222cfc0/220427_ROB_FIONA_0031.jpeg?width=250&height=250&mode=crop"
   },
   "Category": "Editor Tools",
-  "LicenseTypes": [ "Apache-2.0" ],
+  "LicenseTypes": [ "MIT" ],
   "PackageType": "Package",
   "PackagesByAuthor": ["MemberListView"],
   "RelatedPackages": [],

@@ -51,11 +51,11 @@ jobs:
       id: check_prerelease
       run: |
         if [[ ${{ steps.package_version.outputs.version }} =~ ^[0-9]+\.[0-9]+\.[0-9]+-.+$ ]]; then
-            echo Pre-Release detected
-            echo ::set-output name=prerelease::true
+            echo "Pre-Release detected"
+            echo "prerelease=true" >> $GITHUB_OUTPUT
         else
-            echo Pre-Release NOT detected
-            echo ::set-output name=prerelease::false
+            echo "Pre-Release NOT detected"
+            echo "prerelease=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Install Node dependencies

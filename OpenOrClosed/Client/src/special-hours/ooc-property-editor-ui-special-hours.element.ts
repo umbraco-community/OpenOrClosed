@@ -60,14 +60,29 @@ export class OocPropertyEditorUiSpecialHoursElement extends BusinessHoursBaseEle
     }
 
     private _removeOldDates() {
-        const currentDate = new Date();
-        currentDate.setHours(0, 0, 0, 0);
-        
+        // Compare as plain calendar dates. `new Date('2026-08-19')` is parsed as UTC midnight, so
+        // comparing it against a local Date drops today's entry in negative UTC offsets.
+        const today = new Date();
+        const currentDate = this._toDateKey(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
         this.value = this.value.filter(day => {
             if (!day.date) return true;
-            const dayDate = new Date(day.date);
-            return dayDate >= currentDate;
+            return this._dateKey(day.date) >= currentDate;
         });
+    }
+
+    /** `YYYY-MM-DD` from the stored value, ignoring any time or timezone that came with it. */
+    private _dateKey(date: string): string {
+        const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) return match[0];
+
+        const parsed = new Date(date);
+        if (isNaN(parsed.getTime())) return '';
+        return this._toDateKey(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
+    }
+
+    private _toDateKey(year: number, month: number, day: number): string {
+        return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     }
 
     private _createSpecialDay(): SpecialDay {
@@ -164,6 +179,14 @@ export class OocPropertyEditorUiSpecialHoursElement extends BusinessHoursBaseEle
             margin-top: var(--uui-size-space-4);
         }
 
+        .day-errors {
+            margin-bottom: var(--uui-size-space-2);
+        }
+
+        .day-error {
+            color: var(--uui-color-danger);
+            font-size: var(--uui-type-small-size);
+        }
     `;
 
     render() {
@@ -185,7 +208,7 @@ export class OocPropertyEditorUiSpecialHoursElement extends BusinessHoursBaseEle
                             </div>
                             
                             <uui-toggle
-                                .checked=${day.isOpen}
+                                .checked=${this._isToggleChecked(day)}
                                 @change=${() => this._toggleDayOpen(dayIndex)}
                                 label="Toggle open/closed status">
                             </uui-toggle>
@@ -205,6 +228,7 @@ export class OocPropertyEditorUiSpecialHoursElement extends BusinessHoursBaseEle
                             </uui-form-validation-message>
                         </div>
 
+                        ${this._renderDayErrors(day, dayIndex)}
                         ${this._renderClosedCommentField(day, dayIndex)}
                         ${this._renderHoursSection(day, dayIndex)}
                     </div>

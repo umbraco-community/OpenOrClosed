@@ -161,6 +161,15 @@ export class OocPropertyEditorUiStandardHoursElement extends BusinessHoursBaseEl
         .add-button {
             margin-top: var(--uui-size-space-4);
         }
+
+        .day-errors {
+            margin-bottom: var(--uui-size-space-2);
+        }
+
+        .day-error {
+            color: var(--uui-color-danger);
+            font-size: var(--uui-type-small-size);
+        }
     `;
 
     render() {
@@ -175,7 +184,7 @@ export class OocPropertyEditorUiStandardHoursElement extends BusinessHoursBaseEl
                             
                             <div class="day-status">
                                 <uui-toggle
-                                    .checked=${day.isOpen}
+                                    .checked=${this._isToggleChecked(day)}
                                     @change=${() => this._toggleDayOpen(dayIndex)}
                                     label="Toggle ${day.dayoftheweek} open/closed">
                                 </uui-toggle>
@@ -185,6 +194,7 @@ export class OocPropertyEditorUiStandardHoursElement extends BusinessHoursBaseEl
                             </div>
                         </div>
 
+                        ${this._renderDayErrors(day, dayIndex)}
                         ${this._renderClosedCommentField(day, dayIndex)}
                         ${this._renderHoursSection(day, dayIndex)}
                     </div>

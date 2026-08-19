@@ -62,6 +62,25 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         this._initializeValue();
     }
 
+    // The workspace can hand us `value` and `config` after we are connected (async load, variant
+    // switch), so re-read them whenever they change rather than only once on connect.
+    protected willUpdate(changedProperties: Map<string, unknown>) {
+        super.willUpdate(changedProperties);
+
+        if (changedProperties.has('config')) {
+            this._mergeConfig();
+        }
+
+        if (changedProperties.has('config') || (changedProperties.has('value') && !this._valueMatchesDays())) {
+            this._initializeValue();
+        }
+    }
+
+    /** True when `value` is already what we last wrote out, so an incoming update is our own echo. */
+    private _valueMatchesDays(): boolean {
+        return JSON.stringify(this.value ?? null) === JSON.stringify(this._days ?? null);
+    }
+
     protected _mergeConfig() {
         // Start with defaults
         const mergedConfig = { ...this._defaultConfig };
@@ -99,6 +118,11 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
     protected _getDisplayLabel(day: T): string {
         const effectiveIsOpen = this._getEffectiveIsOpen(day);
         return effectiveIsOpen ? (this._config.labelOpen || 'Open') : (this._config.labelClosed || 'Closed');
+    }
+
+    /** The value the on/off toggle should show - `reversed` flips it relative to the stored flag. */
+    protected _isToggleChecked(day: T): boolean {
+        return this._getEffectiveIsOpen(day);
     }
 
     protected _getDisplayClass(day: T): string {
@@ -140,20 +164,6 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         return errors;
     }
 
-    protected _validateAllDays(): boolean {
-        const allErrors: string[] = [];
-        
-        this._days.forEach((day, index) => {
-            const errors = this._validateDay(day, index);
-            allErrors.push(...errors);
-        });
-        
-        if (allErrors.length > 0) {
-            console.warn('Validation errors:', allErrors);
-        }
-        
-        return allErrors.length === 0;
-    }
 
     // Method to validate individual time fields for UI validation
     protected _validateTimeField(dayIndex: number, hoursIndex: number, field: 'opensAt' | 'closesAt'): string | null {
@@ -164,9 +174,7 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         
         // Validate end time is after start time
         if (field === 'closesAt' && hours.opensAt && hours.closesAt) {
-            console.log(`Validating: closesAt=${hours.closesAt}, opensAt=${hours.opensAt}`);
-            if (hours.closesAt <= hours.opensAt) {
-                console.log('Validation failed: End time must be after start time');
+            if (!this._isTimeAfter(hours.closesAt, hours.opensAt)) {
                 return 'End time must be after start time';
             }
         }
@@ -207,51 +215,41 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         this.requestUpdate(); // Ensure UI updates to show validation states
     }
 
+    /**
+     * `<input type="time">` only ever accepts and reports a 24-hour `HH:mm[:ss]` value - whether it
+     * is *presented* as 12-hour is up to the browser locale. Handing it "9:00 AM" makes it discard
+     * the value and render blank, so both directions stay on the 24-hour wire format.
+     */
     protected _formatTime(time: string | null): string {
         if (!time) return '';
-        
-        if (this._config.time_24hr) {
-            return time;
-        }
-        
-        // Convert to 12-hour format
+
         const [hours, minutes] = time.split(':');
-        const hour24 = parseInt(hours);
-        const hour12 = hour24 % 12 || 12;
-        const ampm = hour24 < 12 ? 'AM' : 'PM';
-        return `${hour12}:${minutes} ${ampm}`;
+        if (hours === undefined || minutes === undefined) return '';
+
+        return `${hours.padStart(2, '0')}:${minutes}`;
     }
+
 
     protected _parseTimeInput(timeStr: string): string {
         if (!timeStr) return '';
-        
-        if (this._config.time_24hr) {
-            return timeStr;
-        }
-        
-        // Convert from 12-hour to 24-hour format
-        const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (!match) return timeStr;
-        
-        let [, hours, minutes, ampm] = match;
-        let hour24 = parseInt(hours);
-        
-        if (ampm.toUpperCase() === 'PM' && hour24 !== 12) {
-            hour24 += 12;
-        } else if (ampm.toUpperCase() === 'AM' && hour24 === 12) {
-            hour24 = 0;
-        }
-        
-        return `${hour24.toString().padStart(2, '0')}:${minutes}:00`;
+
+        // The native control always reports 24-hour `HH:mm` (or `HH:mm:ss`); normalise to seconds.
+        const parts = timeStr.split(':');
+        if (parts.length < 2) return timeStr;
+
+        const [hours, minutes, seconds = '00'] = parts;
+        return `${hours.padStart(2, '0')}:${minutes}:${seconds.padStart(2, '0')}`;
     }
 
     protected _toggleDayOpen(index: number) {
         const day = { ...this._days[index] };
         day.isOpen = !day.isOpen;
-        
-        if (day.isOpen && day.hoursOfBusiness.length === 0) {
+
+        // Hours belong to the day as it is *displayed*, which `reversed` inverts.
+        const effectiveIsOpen = this._getEffectiveIsOpen(day);
+        if (effectiveIsOpen && day.hoursOfBusiness.length === 0) {
             day.hoursOfBusiness = [this._createHours()];
-        } else if (!day.isOpen) {
+        } else if (!effectiveIsOpen) {
             day.hoursOfBusiness = [];
         }
         
@@ -261,7 +259,7 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
     }
 
     protected _addHours(dayIndex: number) {
-        if (!this._config.excludeTimes || !this._config.hoursOptional) {
+        if (!this._config.excludeTimes) {
             const day = { ...this._days[dayIndex] };
             const newHours = this._createSmartHours(day);
             day.hoursOfBusiness = [...day.hoursOfBusiness, newHours];
@@ -306,7 +304,7 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         day.hoursOfBusiness = day.hoursOfBusiness.filter((_, i) => i !== hoursIndex);
         
         if (!this._config.hoursOptional && day.hoursOfBusiness.length === 0) {
-            day.isOpen = false;
+            day.isOpen = !!this._config.reversed;
         }
         
         this._days = [...this._days];
@@ -374,24 +372,6 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
         return getMinutes(timeA) > getMinutes(timeB);
     }
 
-    protected _addHoursToTime(timeString: string, hours: number): string {
-        // Parse time string (HH:mm:ss or HH:mm format)
-        const parts = timeString.split(':');
-        const currentHours = parseInt(parts[0]);
-        const mins = parseInt(parts[1]);
-        const secs = parts.length > 2 ? parseInt(parts[2]) : 0;
-
-        // Create date object for easier manipulation
-        const date = new Date();
-        date.setHours(currentHours + hours, mins, secs);
-
-        // Format back to HH:mm:ss
-        const newHours = date.getHours().toString().padStart(2, '0');
-        const newMins = date.getMinutes().toString().padStart(2, '0');
-        const newSecs = date.getSeconds().toString().padStart(2, '0');
-
-        return `${newHours}:${newMins}:${newSecs}`;
-    }
 
     protected _addMinutesToTime(timeString: string, minutes: number): string {
         // Parse time string (HH:mm:ss or HH:mm format)
@@ -535,6 +515,18 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
                     ` : ''}
                 </div>
             ` : ''}
+        `;
+    }
+
+    /** Renders the validation messages for a day - `_validateDay` had no way of reaching the UI. */
+    protected _renderDayErrors(day: T, dayIndex: number) {
+        const errors = this._validateDay(day, dayIndex);
+        if (errors.length === 0) return '';
+
+        return html`
+            <div class="day-errors">
+                ${errors.map((error) => html`<div class="day-error">${error}</div>`)}
+            </div>
         `;
     }
 

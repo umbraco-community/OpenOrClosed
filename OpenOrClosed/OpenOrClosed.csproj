@@ -26,7 +26,7 @@
 			Business Hours.
 		</Description>
 		<Company>Your IT Group</Company>
-		<Product>OpenOrClosed for Umbraco 16</Product>
+		<Product>OpenOrClosed for Umbraco 17</Product>
 		<Authors>Robert Foster-Williams</Authors>
 		<Copyright>Copyright © 2022 - $([System.DateTime]::Now.Year) © $(Company)</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -38,7 +38,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>umbraco umbraco-marketplace Business Hours</PackageTags>
 		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>Targeting Umbraco 16</PackageReleaseNotes>
+		<PackageReleaseNotes>Targeting Umbraco 17 and 18</PackageReleaseNotes>
 		<PackageReadmeFile>README.nuget.md</PackageReadmeFile>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
