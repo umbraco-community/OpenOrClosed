@@ -229,15 +229,24 @@ value holds an entry for each. A day with no stored ranges becomes a `WeeklyHour
 view reconstructing missing days, and it makes `IsOpen` meaningful rather than an artifact of what
 happened to be saved. Ranges within a day are sorted by `Start`.
 
-Cache level is `PropertyCacheLevel.Element` for both. Unlike the existing editors, nothing in the
-conversion depends on today's date — weekly hours carry no dates at all, and holidays carry the
-dates the editor stored — so there is no staleness to avoid.
+**Expired holidays are filtered out on read.** When `removeExpiredHolidays` is on, the holidays
+converter drops any holiday that has already finished, so a strongly typed model and the Delivery
+API only ever see current and future holidays. A holiday is expired when
+`RepeatYearly == false && End < today`; a repeating holiday never expires, because it recurs.
 
-The one exception is the `removeExpiredHolidays` setting. Filtering by today inside the converter
-would reintroduce exactly the staleness problem the existing Special Hours converter had, so it is
-**not** applied during conversion. It affects the editor UI only, which prunes expired
-non-repeating holidays when the property loads. Consumers filter at read time via the extension
-methods below.
+Cache levels differ as a result:
+
+| Converter | Cache level | Why |
+|---|---|---|
+| Weekly hours | `PropertyCacheLevel.Element` | Nothing in the conversion depends on today |
+| Holidays | `PropertyCacheLevel.None` | Expiry is relative to today |
+
+The filtering happens in `ConvertIntermediateToObject` and
+`ConvertIntermediateToDeliveryApiObject`, never in `ConvertSourceToIntermediate`. The intermediate
+value is cached for the lifetime of the element regardless of cache level, so date-dependent work
+placed there would be frozen at whenever the cache was warmed — the bug fixed in the existing
+Special Hours converter. Keeping the intermediate a pure deserialize and the cache level `None` is
+what makes filtering by today correct across a day boundary.
 
 ### Combining the two editors
 
@@ -284,7 +293,13 @@ shut at exactly 17:00. A range ending at `24:00` includes every instant up to mi
 `time_24hr` genuinely works here: block labels are rendered by the component, unlike the existing
 editor where the value was handed to a native `<input type="time">` that ignored it.
 
-**Holidays** — `removeExpiredHolidays` (default true), scoped to the editor as described above.
+**Holidays** — `removeExpiredHolidays` (default true). It governs the read path: when on, expired
+holidays are absent from the converted value and from the Delivery API.
+
+The editor still shows them. Hiding stored entries from the person maintaining them makes a
+mistyped date impossible to find and impossible to correct, so expired holidays render dimmed and
+marked *Expired*, with an explicit **Remove expired** action above the table. Nothing is deleted
+from the stored value without the editor asking for it.
 
 ## Client architecture
 
@@ -334,6 +349,11 @@ current Delivery API tests: both converters across the Razor and Delivery API pa
 handling, non-mutation of the intermediate, the `"HH:mm"` JSON converter including `24:00`, and
 the precedence helper — holiday over weekly, all three `hoursMode` values, a yearly holiday
 rolling from December into January, and 29 February in a non-leap year.
+
+Expiry gets its own cases, since it is the one date-dependent path: a past one-off dropped, a
+past-but-repeating holiday kept, a holiday ending today kept, and `removeExpiredHolidays` off
+keeping everything. The converters take an injectable `today` for the same reason the existing
+ones do, so these run against fixed dates rather than `DateTime.Now`.
 
 **Not covered** — assembled UI behaviour in a real backoffice, which is verified by hand.
 
