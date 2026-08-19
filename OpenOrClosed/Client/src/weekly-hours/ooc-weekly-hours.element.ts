@@ -1,19 +1,13 @@
-import {
-    css,
-    customElement,
-    html,
-    LitElement,
-    property,
-    state,
-} from '@umbraco-cms/backoffice/external/lit';
-import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { css, customElement, html, property } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type {
     UmbPropertyEditorConfigCollection,
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
 import { parseTime, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
+import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
-import '../timeline/ooc-range-dialog.element.js';
 
 interface WeeklyHoursDay {
     day: number;
@@ -32,14 +26,12 @@ const WEEK = [
 ];
 
 @customElement('ooc-weekly-hours')
-export class OocWeeklyHoursElement extends UmbElementMixin(LitElement) implements UmbPropertyEditorUiElement {
+export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyEditorUiElement {
     @property({ type: Array })
     value: WeeklyHoursDay[] = [];
 
     @property({ attribute: false })
     config?: UmbPropertyEditorConfigCollection;
-
-    @state() private _editing: { day: number; index: number } | null = null;
 
     private _setting(alias: string): unknown {
         return this.config?.getValueByAlias(alias);
@@ -68,6 +60,26 @@ export class OocWeeklyHoursElement extends UmbElementMixin(LitElement) implement
 
     private _rangesFor(day: number): HoursRange[] {
         return sanitizeRanges(this.value?.find((entry) => entry.day === day)?.ranges);
+    }
+
+    /** Opens the range editor as a sidebar. Closing it without saving simply rejects. */
+    private async _editRange(day: number, index: number) {
+        const ranges = this._rangesFor(day);
+
+        try {
+            const result = await umbOpenModal(this, OOC_RANGE_MODAL, {
+                data: {
+                    ranges,
+                    index,
+                    use24Hour: this._use24Hour,
+                    showAppointmentOnly: this._showAppointmentOnly,
+                },
+            });
+
+            this._setRanges(day, result.ranges);
+        } catch {
+            // Dismissed - leave the day as it was.
+        }
     }
 
     private _setRanges(day: number, ranges: HoursRange[]) {
@@ -129,8 +141,6 @@ export class OocWeeklyHoursElement extends UmbElementMixin(LitElement) implement
     }
 
     render() {
-        const editingRanges = this._editing ? this._rangesFor(this._editing.day) : [];
-
         return html`
             ${this._renderAxis()}
             ${WEEK.map(
@@ -144,36 +154,11 @@ export class OocWeeklyHoursElement extends UmbElementMixin(LitElement) implement
                             .defaultDurationMinutes=${this._defaultDuration}
                             .trackLabel=${entry.name}
                             @change=${(e: CustomEvent) => this._setRanges(entry.day, e.detail.ranges)}
-                            @edit-range=${(e: CustomEvent) =>
-                                (this._editing = { day: entry.day, index: e.detail.index })}>
+                            @edit-range=${(e: CustomEvent) => this._editRange(entry.day, e.detail.index)}>
                         </ooc-timeline>
                     </div>
                 `,
             )}
-            ${this._editing
-                ? html`<uui-modal-dialog @close=${() => (this._editing = null)}>
-                      <uui-dialog-layout headline="Edit hours">
-                          <ooc-range-dialog
-                              .ranges=${editingRanges}
-                              .index=${this._editing.index}
-                              .use24Hour=${this._use24Hour}
-                              .showAppointmentOnly=${this._showAppointmentOnly}
-                              @save=${(e: CustomEvent) => {
-                                  this._setRanges(this._editing!.day, e.detail.ranges);
-                                  this._editing = null;
-                              }}
-                              @remove=${(e: CustomEvent) => {
-                                  this._setRanges(
-                                      this._editing!.day,
-                                      editingRanges.filter((_, i) => i !== e.detail.index),
-                                  );
-                                  this._editing = null;
-                              }}
-                              @cancel=${() => (this._editing = null)}>
-                          </ooc-range-dialog>
-                      </uui-dialog-layout>
-                  </uui-modal-dialog>`
-                : ''}
         `;
     }
 }
