@@ -271,7 +271,6 @@ export class OocTimelineElement extends UmbLitElement {
             color: var(--uui-color-selected);
             font-size: var(--uui-type-small-size);
             white-space: nowrap;
-            overflow: hidden;
             cursor: pointer;
         }
 
@@ -283,6 +282,30 @@ export class OocTimelineElement extends UmbLitElement {
         .block .times {
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            padding: 2px 6px;
+            border-radius: var(--uui-border-radius);
+            background: var(--uui-color-invariant, #1b264f);
+            color: var(--uui-color-invariant-contrast, #fff);
+            font-size: var(--uui-type-small-size);
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 80ms ease-in-out;
+        }
+
+        /* :focus-visible is what makes this work for keyboard users - a native title cannot. */
+        .block:hover .tooltip,
+        .block:focus-visible .tooltip {
+            opacity: 1;
         }
 
         /* Too narrow to read - the label and appointment icons carry the meaning. */
@@ -365,9 +388,8 @@ export class OocTimelineElement extends UmbLitElement {
                 ${this.showAppointmentOnly && range.byAppointmentOnly
                     ? html`<uui-icon name="icon-user" title="By appointment only"></uui-icon>`
                     : ''}
-                <span class="times" title=${this._accessibleName(range)}
-                    >${formatRange(range, this.use24Hour)}</span
-                >
+                <span class="times">${formatRange(range, this.use24Hour)}</span>
+                <span class="tooltip" role="presentation">${this._accessibleName(range)}</span>
             </button>
         `;
     }
