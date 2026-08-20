@@ -65,25 +65,13 @@ export class OocTimelineElement extends UmbLitElement {
         return (minutes / DAY_MINUTES) * 100;
     }
 
-    /**
-     * What this range says about itself: times, then its label, then its appointment state.
-     * No track label - the tooltip sits on the track, so naming it there is noise.
-     */
-    protected _rangeSummary(range: HoursRange): string {
-        const parts = [formatRange(range, this.use24Hour)];
+    protected _accessibleName(range: HoursRange): string {
+        const parts = [this.trackLabel, formatRange(range, this.use24Hour)];
         if (range.label) parts.push(range.label);
         if (range.byAppointmentOnly) {
             parts.push(this.localize.term('openOrClosed_byAppointmentOnlyShort'));
         }
-        return parts.join(', ');
-    }
-
-    /**
-     * The same thing, prefixed with the track. A screen reader user reaches a block without the
-     * visual context of which track it is on, so for them the prefix is the useful part.
-     */
-    protected _accessibleName(range: HoursRange): string {
-        return [this.trackLabel, this._rangeSummary(range)].filter(Boolean).join(', ');
+        return parts.filter(Boolean).join(', ');
     }
 
     /** Turns a pointer position into minutes since midnight. */
@@ -403,7 +391,7 @@ export class OocTimelineElement extends UmbLitElement {
                           title=${this.localize.term('openOrClosed_byAppointmentOnly')}></uui-icon>`
                     : ''}
                 <span class="times">${formatRange(range, this.use24Hour)}</span>
-                <span class="tooltip" role="presentation">${this._rangeSummary(range)}</span>
+                <span class="tooltip" role="presentation">${this._accessibleName(range)}</span>
             </button>
         `;
     }
