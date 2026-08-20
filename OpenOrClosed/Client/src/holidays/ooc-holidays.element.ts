@@ -120,11 +120,11 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
     /** The pill in the Hours column: what this holiday actually resolves to. */
     private _hoursSummary(holiday: Holiday): string {
-        if (holiday.hoursMode === 'closed') return 'Closed';
-        if (holiday.hoursMode === 'default') return 'Default';
+        if (holiday.hoursMode === 'closed') return this.localize.term('openOrClosed_hoursClosed');
+        if (holiday.hoursMode === 'default') return this.localize.term('general_default');
 
         const ranges = sanitizeRanges(holiday.hours);
-        if (ranges.length === 0) return 'Closed';
+        if (ranges.length === 0) return this.localize.term('openOrClosed_hoursClosed');
 
         const first = formatRange(ranges[0], this._use24Hour);
         return ranges.length > 1 ? `${first} +${ranges.length - 1}` : first;
@@ -175,6 +175,19 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
         tr.expired td {
             opacity: 0.6;
         }
+        .row-action {
+            padding: 0;
+            border: none;
+            background: none;
+            color: inherit;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+        .row-action:focus-visible {
+            outline: 2px solid var(--uui-color-focus);
+            outline-offset: 2px;
+        }
         .pill {
             display: inline-block;
             padding: 0 var(--uui-size-space-2);
@@ -193,9 +206,31 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
         return html`
             <tr class="row ${expired ? 'expired' : ''}" @click=${() => this._editHoliday(index)}>
-                <td>${holiday.name}${expired ? html` <em>(Expired)</em>` : ''}</td>
+                <td>
+                    <!--
+                      A real button, not tabindex+role on the <tr>: role="button" on a row
+                      destroys the table semantics screen readers rely on.
+                    -->
+                    <button
+                        class="row-action"
+                        type="button"
+                        aria-label=${this.localize.term(
+                            'openOrClosed_openHolidayAction',
+                            holiday.name,
+                        )}
+                        @click=${(e: Event) => {
+                            // The row also handles click; without this the modal opens twice.
+                            e.stopPropagation();
+                            this._editHoliday(index);
+                        }}>
+                        ${holiday.name}
+                    </button>
+                    ${expired
+                        ? html` <em>${this.localize.term('openOrClosed_expiredSuffix')}</em>`
+                        : ''}
+                </td>
                 <td>${formatDateRange(holiday)}</td>
-                <td>${holiday.repeatYearly ? 'Yes' : 'No'}</td>
+                <td>${this.localize.term(holiday.repeatYearly ? 'general_yes' : 'general_no')}</td>
                 <td><span class="pill">${this._hoursSummary(holiday)}</span></td>
             </tr>
         `;
@@ -209,12 +244,14 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
         return html`
             <div class="section">
-                <div class="section-head"><h4>Default holiday hours</h4></div>
+                <div class="section-head">
+                    <h4>${this.localize.term('openOrClosed_defaultHolidayHours')}</h4>
+                </div>
                 <ooc-timeline
                     .ranges=${schedule.defaultHours}
                     .use24Hour=${this._use24Hour}
                     .showAppointmentOnly=${this._showAppointmentOnly}
-                    .trackLabel=${'Default holiday hours'}
+                    .trackLabel=${this.localize.term('openOrClosed_defaultHolidayHours')}
                     @change=${(e: CustomEvent) => this._setDefaultHours(e.detail.ranges)}
                     @edit-range=${(e: CustomEvent) => this._editDefaultRange(e.detail.index)}>
                 </ooc-timeline>
@@ -222,26 +259,34 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
             <div class="section">
                 <div class="section-head">
-                    <h4>Holidays</h4>
+                    <h4>${this.localize.term('openOrClosed_holidaysLabel')}</h4>
                     ${hasExpired
                         ? html`<uui-button
                               look="secondary"
-                              label="Remove expired"
+                              label=${this.localize.term('openOrClosed_removeExpired')}
                               @click=${this._removeExpired}>
-                              Remove expired
+                              ${this.localize.term('openOrClosed_removeExpired')}
                           </uui-button>`
                         : ''}
                 </div>
 
                 ${holidays.length === 0
-                    ? html`<div class="empty">No holidays yet.</div>`
+                    ? html`<div class="empty">
+                          ${this.localize.term('openOrClosed_noHolidaysYet')}
+                      </div>`
                     : html`<table>
                           <thead>
                               <tr>
-                                  <th>Name</th>
-                                  <th>Dates</th>
-                                  <th>Yearly</th>
-                                  <th>Hours</th>
+                                  <th scope="col">${this.localize.term('general_name')}</th>
+                                  <th scope="col">
+                                      ${this.localize.term('openOrClosed_columnDates')}
+                                  </th>
+                                  <th scope="col">
+                                      ${this.localize.term('openOrClosed_columnYearly')}
+                                  </th>
+                                  <th scope="col">
+                                      ${this.localize.term('openOrClosed_columnHours')}
+                                  </th>
                               </tr>
                           </thead>
                           <tbody>
@@ -251,9 +296,9 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
                 <uui-button
                     look="placeholder"
-                    label="Add holiday"
+                    label=${this.localize.term('openOrClosed_addHoliday')}
                     @click=${() => this._editHoliday(NEW_HOLIDAY)}>
-                    + Add holiday
+                    + ${this.localize.term('openOrClosed_addHoliday')}
                 </uui-button>
             </div>
         `;

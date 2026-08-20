@@ -5,7 +5,7 @@ export const manifests: Array<UmbExtensionManifest> = [
         name: 'Holidays Property Editor UI',
         element: () => import('./ooc-holidays.element.js'),
         meta: {
-            label: 'Holidays',
+            label: '#openOrClosed_holidaysLabel',
             icon: 'icon-calendar',
             group: 'richContent',
             propertyEditorSchemaAlias: 'OpenOrClosed.Holidays',
@@ -13,21 +13,20 @@ export const manifests: Array<UmbExtensionManifest> = [
                 properties: [
                     {
                         alias: 'removeExpiredHolidays',
-                        label: 'Remove Expired Holidays?',
-                        description:
-                            'Hide finished holidays from the converted value and the Delivery API. They stay visible in this editor so a mistyped date can still be corrected.',
+                        label: '#openOrClosed_settingRemoveExpired',
+                        description: '#openOrClosed_settingRemoveExpiredDescription',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                     {
                         alias: 'time_24hr',
-                        label: 'Time Format',
-                        description: '12/24 hour clock',
+                        label: '#openOrClosed_settingTimeFormat',
+                        description: '#openOrClosed_settingTimeFormatDescription',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                     {
                         alias: 'showAppointmentOnly',
-                        label: 'Enable Appointment Only?',
-                        description: 'Show the appointment only option for a set of hours',
+                        label: '#openOrClosed_settingAppointmentOnly',
+                        description: '#openOrClosed_settingAppointmentOnlyDescription',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                 ],

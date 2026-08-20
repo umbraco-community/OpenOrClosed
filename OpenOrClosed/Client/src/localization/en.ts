@@ -29,7 +29,7 @@ export default {
         // Holidays editor
         defaultHolidayHours: 'Default holiday hours',
         noHolidaysYet: 'No holidays yet.',
-        addHoliday: '+ Add holiday',
+        addHoliday: 'Add holiday',
         removeExpired: 'Remove expired',
         columnDates: 'Dates',
         columnYearly: 'Yearly',
