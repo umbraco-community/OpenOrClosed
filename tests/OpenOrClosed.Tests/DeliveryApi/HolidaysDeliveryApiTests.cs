@@ -222,4 +222,33 @@ public class HolidaysDeliveryApiTests
     {
         Project("{ not json", removeExpired: true).Holidays.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Project_SortsHolidaysByStartThenName()
+    {
+        // Stored out of order, and with two sharing a start so the name tiebreak is exercised.
+        const string unsorted = """
+            { "defaultHours": [], "holidays": [
+                { "name": "Later", "start": "2027-03-01", "end": "2027-03-01",
+                  "repeatYearly": false, "hoursMode": "closed", "hours": [] },
+                { "name": "Beta", "start": "2027-01-01", "end": "2027-01-01",
+                  "repeatYearly": false, "hoursMode": "closed", "hours": [] },
+                { "name": "Alpha", "start": "2027-01-01", "end": "2027-01-01",
+                  "repeatYearly": false, "hoursMode": "closed", "hours": [] } ] }
+            """;
+
+        Project(unsorted, removeExpired: true).Holidays
+            .Select(holiday => holiday.Name)
+            .Should().Equal("Alpha", "Beta", "Later");
+    }
+
+    [Fact]
+    public void Project_SortOrderMatchesWhatTheEditorDisplays()
+    {
+        // The client's sortHolidays orders by start then name; a consumer reading the converted
+        // value should see the same order the editor showed.
+        Project(StoredValue, removeExpired: false).Holidays
+            .Select(holiday => holiday.Start)
+            .Should().BeInAscendingOrder();
+    }
 }

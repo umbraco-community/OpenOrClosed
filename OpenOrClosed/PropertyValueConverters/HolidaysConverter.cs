@@ -84,15 +84,20 @@ public class HolidaysConverter : PropertyValueConverterBase, IDeliveryApiPropert
             DefaultHours = Copy(stored.DefaultHours),
             Holidays =
             [
-                .. holidays.Select(holiday => new Holiday
-                {
-                    Name = holiday.Name,
-                    Start = holiday.Start,
-                    End = holiday.End,
-                    RepeatYearly = holiday.RepeatYearly,
-                    HoursMode = holiday.HoursMode,
-                    Hours = Copy(holiday.Hours),
-                }),
+                // Start then name, matching the editor's sortHolidays - a consumer should not
+                // see a different order than the person who typed them in.
+                .. holidays
+                    .OrderBy(holiday => holiday.Start)
+                    .ThenBy(holiday => holiday.Name, StringComparer.CurrentCulture)
+                    .Select(holiday => new Holiday
+                    {
+                        Name = holiday.Name,
+                        Start = holiday.Start,
+                        End = holiday.End,
+                        RepeatYearly = holiday.RepeatYearly,
+                        HoursMode = holiday.HoursMode,
+                        Hours = Copy(holiday.Hours),
+                    }),
             ],
         };
     }
