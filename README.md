@@ -177,6 +177,8 @@ A few behaviours worth knowing:
   **Time Format** setting rather than being hardcoded English.
 * Accessibility: holiday rows are reachable and operable by keyboard, focus is kept when a
   range is added or deleted, and block tooltips appear on keyboard focus as well as hover.
+* All four property editors now dispatch `UmbChangeEvent` rather than the deprecated
+  `property-value-change`, which Umbraco removes in 20.0.0.
 
 ### Version 17.1.2
 
