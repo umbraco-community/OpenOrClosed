@@ -1,6 +1,11 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
+  },
   build: {
     lib: {
       entry: "src/bundle.manifests.ts", // Bundle registers one or more manifests

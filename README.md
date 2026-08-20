@@ -29,7 +29,156 @@ Monday through to Sunday and optionally Bank Holidays, set each day Open or Clos
 
 Adds the ability to specify specific dates, with the same set of features for Standard Business Hours.
 
+### Weekly Hours
+
+A recurring Monday-to-Sunday schedule drawn on seven timelines. Drag a block's edges to resize it or
+its middle to move it; click one to set exact times, add an optional label, or mark it by
+appointment only. Ranges snap to 15 minutes, never cross midnight, and cannot be dragged into
+overlapping. `24:00` is a valid end, meaning open until midnight.
+
+### Holidays
+
+Named date ranges that override the weekly schedule, with a shared **Default holiday hours**
+timeline at the top and a per-holiday override of `Default`, `Closed` or `Custom`. A holiday can
+repeat yearly, in which case it never expires.
+
+## Choosing between them
+
+The package ships two pairs of hours editors. They do not interact, so pick one pair per site:
+
+| Use | When |
+| -- | -- |
+| **Weekly Hours** + **Holidays** | New sites. Direct manipulation, no overlaps possible, Delivery API support, and helpers that combine the two. |
+| **Standard Business Hours** + **Special Business Hours** | You need per-day comments, `reversed` mode, or a Bank Holidays row - none of which the timeline editors support. |
+
+There is no migration between the pairs. The stored `day` convention is kept compatible so one
+could be added later.
+
+## Combining Weekly Hours and Holidays
+
+**Weekly Hours and Holidays are two separate properties, and reading the weekly one alone means
+your site says it is open on Christmas Day.** The package ships extension methods that apply the
+correct precedence - a matching holiday replaces that day's weekly hours entirely:
+
+```csharp
+@using OpenOrClosed.Core.Extensions
+@using OpenOrClosed.Core.Models
+
+@{
+    var weekly = Model.Value<IEnumerable<WeeklyHoursDay>>("weeklyHours") ?? [];
+    var holidays = Model.Value<HolidaySchedule>("holidays");
+
+    var today = weekly.OpeningHoursOn(DateOnly.FromDateTime(DateTime.Now), holidays);
+    var openNow = weekly.IsOpenAt(DateTime.Now, holidays);
+}
+
+@functions {
+    // A TimeSpan of exactly 24:00 carries Days == 1 and Hours == 0, so "hh\:mm" renders it as
+    // "00:00" - open until midnight would read as closing at the start of the day.
+    static string Clock(TimeSpan time) => $"{(int)time.TotalHours:00}:{time.Minutes:00}";
+}
+
+<p>We are @(openNow ? "open" : "closed") right now.</p>
+
+@if (today.Holiday is not null)
+{
+    <p>@today.Holiday.Name</p>
+}
+
+@if (today.IsOpen)
+{
+    <ul>
+        @foreach (var range in today.Ranges)
+        {
+            <li>
+                @Clock(range.Start) - @Clock(range.End)
+                @if (range.Label is not null)
+                {
+                    <text>(@range.Label)</text>
+                }
+                @if (range.ByAppointmentOnly)
+                {
+                    <text>- by appointment only</text>
+                }
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>Closed today.</p>
+}
+```
+
+To answer "when are you open" for more than one date, call `OpeningHoursOn` per date rather than
+reading the weekly property directly — a holiday only applies to the dates it covers:
+
+```csharp
+@foreach (var offset in Enumerable.Range(0, 7))
+{
+    var date = DateOnly.FromDateTime(DateTime.Now).AddDays(offset);
+    var day = weekly.OpeningHoursOn(date, holidays);
+
+    <tr>
+        <td>@date.ToString("ddd d MMM")</td>
+        <td>@(day.Holiday?.Name ?? "-")</td>
+        <td>@(day.IsOpen ? string.Join(", ", day.Ranges.Select(r => $"{Clock(r.Start)} - {Clock(r.End)}")) : "Closed")</td>
+    </tr>
+}
+```
+
+`OpeningHoursOn` returns the resolved `Ranges` for a date plus the `Holiday` that applied, if any.
+`IsOpenAt` treats a range as start-inclusive and end-exclusive, so a shop closing at 17:00 is shut
+at exactly 17:00.
+
+A few behaviours worth knowing:
+
+* **The weekly converter always returns seven days**, Monday first, whether or not the stored value
+  holds an entry for each. A day with no hours has an empty `Ranges` and `IsOpen == false`, so
+  `@foreach` renders a full week without the view reconstructing missing days.
+* **A `Default` holiday with no default hours set is closed.** That is the intended reading of an
+  empty default track.
+* **A yearly holiday spanning New Year still matches in January** - a 27 December to 2 January range
+  applies on 1 January of the following year.
+* **A range ending at midnight is stored as `24:00`, which is a `TimeSpan` of 24 hours.** Its
+  `Hours` component is 0 and its `Days` component is 1, so `ToString(@"hh\:mm")` renders it as
+  `00:00`. Format from `TotalHours`, as the sample above does.
+* **`Remove Expired Holidays` affects the read path only.** With it on, finished holidays are absent
+  from the converted value and the Delivery API, but the editor still shows them dimmed and marked
+  *Expired*, so a mistyped date can be found and corrected. Use the **Remove expired** button to
+  delete them for real.
+
 ## Change Log
+
+### Version 17.2.0
+
+* Added **Weekly Hours** — a recurring Monday-to-Sunday schedule drawn on seven timelines, with
+  drag to move and resize, 15-minute snapping, per-range labels and by-appointment-only flags.
+  Overlaps are impossible: drags clamp at a neighbour's edge, and the pickers in the range sidebar
+  will not offer a time that would collide.
+* Added **Holidays** — named date ranges that override the weekly schedule, with a shared default
+  hours timeline and a per-holiday `Default` / `Closed` / `Custom` override. Holidays can repeat
+  yearly, in which case they never expire.
+* Both editors have value converters with Delivery API support. The weekly converter always
+  returns seven days so a view can loop over a full week; the holidays converter drops finished
+  holidays when **Remove Expired Holidays** is on, while the editor still shows them dimmed and
+  marked *Expired* so a mistyped date can be corrected.
+* Added `OpeningHoursOn` and `IsOpenAt` extension methods in `OpenOrClosed.Core.Extensions`, which
+  apply the correct precedence across the two properties. **Reading the weekly property on its own
+  means your site says it is open on Christmas Day** — see
+  [Combining Weekly Hours and Holidays](#combining-weekly-hours-and-holidays).
+* The existing Standard and Special Business Hours editors are untouched. See
+  [Choosing between them](#choosing-between-them) for which pair to use; there is no migration
+  between the pairs.
+* Added Delivery API support to the Standard and Special Business Hours value converters.
+* The backoffice UI is now localisable. The package ships an `en` dictionary under the
+  `openOrClosed` area; a translation is a single file plus a `localization` manifest entry.
+* Backoffice day names and the timeline axis now follow the current culture and the
+  **Time Format** setting rather than being hardcoded English.
+* Accessibility: holiday rows are reachable and operable by keyboard, focus is kept when a
+  range is added or deleted, and block tooltips appear on keyboard focus as well as hover.
+* All four property editors now dispatch `UmbChangeEvent` rather than the deprecated
+  `property-value-change`, which Umbraco removes in 20.0.0.
 
 ### Version 17.1.2
 

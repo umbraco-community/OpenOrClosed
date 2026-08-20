@@ -1,4 +1,5 @@
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { umbBindToValidation } from '@umbraco-cms/backoffice/validation';
 import { html, LitElement, property, state } from '@umbraco-cms/backoffice/external/lit';
 
@@ -203,14 +204,7 @@ export abstract class BusinessHoursBaseElement<T extends BaseDayInterface, C ext
 
     protected _updateValue() {
         this.value = [...this._days];
-        // Dispatch Umbraco property value change event
-        this.dispatchEvent(new CustomEvent('property-value-change', {
-            detail: {
-                value: this.value
-            },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new UmbChangeEvent());
         
         this.requestUpdate(); // Ensure UI updates to show validation states
     }

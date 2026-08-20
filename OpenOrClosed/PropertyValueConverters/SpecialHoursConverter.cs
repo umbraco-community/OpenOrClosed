@@ -1,7 +1,7 @@
-using Umbraco.Cms.Core.Models.PublishedContent;
+﻿using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.PropertyEditors.DeliveryApi;
-using Newtonsoft.Json;
+using OpenOrClosed.Core.Serialization;
 using OpenOrClosed.Core.ViewModels;
 using OpenOrClosed.Core.PropertyEditors;
 
@@ -32,7 +32,7 @@ public class SpecialHoursConverter : PropertyValueConverterBase, IDeliveryApiPro
             return null;
         }
 
-        return JsonConvert.DeserializeObject<List<SpecialDaysViewModel>>(sourceString);
+        return StoredValueJson.Deserialize<List<SpecialDaysViewModel>>(sourceString);
     }
 
     public override object? ConvertIntermediateToObject(IPublishedElement owner, IPublishedPropertyType propertyType, PropertyCacheLevel referenceCacheLevel, object? inter, bool preview)
