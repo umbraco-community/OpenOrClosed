@@ -1,5 +1,6 @@
 import { css, customElement, html, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type {
     UmbPropertyEditorConfigCollection,
@@ -97,7 +98,9 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         const others = (this.value ?? []).filter((entry) => entry.day !== day);
         this.value = ranges.length > 0 ? [...others, { day, ranges }] : others;
 
-        this.dispatchEvent(new CustomEvent('property-value-change', { bubbles: true, composed: true }));
+        // UmbChangeEvent is bubbles-but-not-composed on purpose: <umb-property> reads
+        // composedPath()[0] and rejects anything whose target is not this element.
+        this.dispatchEvent(new UmbChangeEvent());
     }
 
     static styles = css`

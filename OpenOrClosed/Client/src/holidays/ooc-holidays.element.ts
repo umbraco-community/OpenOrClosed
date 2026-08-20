@@ -1,5 +1,6 @@
 import { css, customElement, html, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import type {
     UmbPropertyEditorConfigCollection,
@@ -51,9 +52,10 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
     private _commit(schedule: HolidaySchedule) {
         this.value = schedule;
 
-        // property-value-change is the only event that leaves this shadow tree. A composed
-        // `change` event would land on Umbraco's <umb-property> and be rejected.
-        this.dispatchEvent(new CustomEvent('property-value-change', { bubbles: true, composed: true }));
+        // UmbChangeEvent is bubbles-but-not-composed on purpose: <umb-property> reads
+        // composedPath()[0] and rejects anything whose target is not this element. That is why
+        // ooc-timeline's own `change` event stays uncomposed - it must not escape this tree.
+        this.dispatchEvent(new UmbChangeEvent());
     }
 
     private _setDefaultHours(defaultHours: HoursRange[]) {

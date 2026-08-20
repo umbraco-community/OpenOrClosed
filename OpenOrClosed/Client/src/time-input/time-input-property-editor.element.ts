@@ -1,5 +1,6 @@
 import { html, css, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbElementMixin } from '@umbraco-cms/backoffice/element-api';
+import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { UmbPropertyEditorUiElement } from '@umbraco-cms/backoffice/property-editor';
 
@@ -14,13 +15,7 @@ export class OocTimeInputPropertyEditorElement extends UmbElementMixin(UmbLitEle
 
     #onChange(e: Event) {
         this.value = (e.target as HTMLInputElement).value;
-        this.dispatchEvent(new CustomEvent('property-value-change', {
-            detail: {
-                value: this.value
-            },
-            bubbles: true,
-            composed: true
-        }));
+        this.dispatchEvent(new UmbChangeEvent());
     }
 
     static styles = css`
