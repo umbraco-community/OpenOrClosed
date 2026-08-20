@@ -14,19 +14,19 @@ export const manifests: Array<UmbExtensionManifest> = [
                     {
                         alias: 'removeExpiredHolidays',
                         label: '#openOrClosed_settingRemoveExpired',
-                        description: '#openOrClosed_settingRemoveExpiredDescription',
+                        description: '{#openOrClosed_settingRemoveExpiredDescription}',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                     {
                         alias: 'time_24hr',
                         label: '#openOrClosed_settingTimeFormat',
-                        description: '#openOrClosed_settingTimeFormatDescription',
+                        description: '{#openOrClosed_settingTimeFormatDescription}',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                     {
                         alias: 'showAppointmentOnly',
                         label: '#openOrClosed_settingAppointmentOnly',
-                        description: '#openOrClosed_settingAppointmentOnlyDescription',
+                        description: '{#openOrClosed_settingAppointmentOnlyDescription}',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                 ],
