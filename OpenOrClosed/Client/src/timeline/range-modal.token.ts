@@ -5,8 +5,9 @@ export interface OocRangeModalData {
     /** Every range on the day, so the modal can validate against its neighbours. */
     ranges: HoursRange[];
     index: number;
-    use24Hour: boolean;
     showAppointmentOnly: boolean;
+    // Deliberately no use24Hour: the times are entered through a native <input type="time">,
+    // whose 12/24-hour presentation follows the operating system, not our setting.
 }
 
 export interface OocRangeModalValue {

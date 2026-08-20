@@ -7,6 +7,7 @@ import {
     isValidTime,
     parseTime,
     validateRange,
+    type HoursRangeProblem,
 } from './time-range.js';
 import type { OocRangeModalData, OocRangeModalValue } from './range-modal.token.js';
 
@@ -20,7 +21,7 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
     @state() private _end = '17:00';
     @state() private _label = '';
     @state() private _byAppointmentOnly = false;
-    @state() private _error: string | null = null;
+    @state() private _error: HoursRangeProblem | null = null;
 
     /** The modal manager sets `data` asynchronously, so seed the fields the first time it arrives. */
     #seeded = false;
@@ -78,11 +79,22 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
      * rule to nag about and this can run on every keystroke. parseTime throws on malformed input,
      * hence the isValidTime guard while a time is still being typed.
      */
-    private get _visibleError(): string | null {
+    private get _visibleError(): HoursRangeProblem | null {
         if (!this.data || !isValidTime(this._start) || !isValidTime(this._end)) return this._error;
 
         return validateRange(
             this.data.ranges, this.data.index, parseTime(this._start), parseTime(this._end));
+    }
+
+    /** Turns a validation code into a sentence. The pure module cannot localise; this can. */
+    private _problemText(problem: HoursRangeProblem | null): string | null {
+        if (!problem) return null;
+
+        return problem.code === 'tooShort'
+            ? this.localize.term('openOrClosed_errorTooShort', problem.minutes)
+            : this.localize.term(
+                  `openOrClosed_error${problem.code.charAt(0).toUpperCase()}${problem.code.slice(1)}`,
+              );
     }
 
     private _save() {
@@ -130,28 +142,28 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
 
     render() {
         return html`
-            <umb-body-layout headline="Edit hours">
+            <umb-body-layout headline=${this.localize.term('openOrClosed_editHours')}>
                 <uui-box>
                     <div class="field">
-                        <div class="label">Starts at</div>
+                        <div class="label">${this.localize.term('openOrClosed_startsAt')}</div>
                         <uui-input
                             type="time"
                             .value=${this._start}
                             .min=${this._bounds.min}
                             .max=${this._bounds.max}
-                            label="Starts at"
+                            label=${this.localize.term('openOrClosed_startsAt')}
                             @change=${(e: Event) => (this._start = (e.target as HTMLInputElement).value)}>
                         </uui-input>
                     </div>
 
                     <div class="field">
-                        <div class="label">Ends at</div>
+                        <div class="label">${this.localize.term('openOrClosed_endsAt')}</div>
                         <uui-input
                             type="time"
                             .value=${this._end === formatTime(DAY_MINUTES) ? '23:59' : this._end}
                             .min=${this._start}
                             .max=${this._bounds.max}
-                            label="Ends at"
+                            label=${this.localize.term('openOrClosed_endsAt')}
                             @change=${(e: Event) => (this._end = (e.target as HTMLInputElement).value)}>
                         </uui-input>
                     </div>
@@ -160,18 +172,21 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                         ? html`<div class="field">
                               <uui-toggle
                                   .checked=${this._isAllDay}
-                                  label="All day"
+                                  label=${this.localize.term('openOrClosed_allDay')}
                                   @change=${this._toggleAllDay}>
-                                  All day
+                                  ${this.localize.term('openOrClosed_allDay')}
                               </uui-toggle>
                           </div>`
                         : ''}
 
                     <div class="field">
-                        <div class="label">Label <span>(optional)</span></div>
+                        <div class="label">
+                            ${this.localize.term('general_label')}
+                            <span>${this.localize.term('openOrClosed_labelOptional')}</span>
+                        </div>
                         <uui-input
                             .value=${this._label}
-                            label="Label"
+                            label=${this.localize.term('general_label')}
                             @input=${(e: Event) => (this._label = (e.target as HTMLInputElement).value)}>
                         </uui-input>
                     </div>
@@ -180,15 +195,15 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                         ? html`<div class="field">
                               <uui-toggle
                                   .checked=${this._byAppointmentOnly}
-                                  label="By appointment only"
+                                  label=${this.localize.term('openOrClosed_byAppointmentOnly')}
                                   @change=${() => (this._byAppointmentOnly = !this._byAppointmentOnly)}>
-                                  By appointment only
+                                  ${this.localize.term('openOrClosed_byAppointmentOnly')}
                               </uui-toggle>
                           </div>`
                         : ''}
 
                     ${this._visibleError
-                        ? html`<div class="error">${this._visibleError}</div>`
+                        ? html`<div class="error">${this._problemText(this._visibleError)}</div>`
                         : ''}
                 </uui-box>
 
@@ -196,24 +211,24 @@ export class OocRangeModalElement extends UmbModalBaseElement<OocRangeModalData,
                     slot="actions"
                     look="secondary"
                     color="danger"
-                    label="Remove"
+                    label=${this.localize.term('general_remove')}
                     @click=${this._remove}>
-                    Remove
+                    ${this.localize.term('general_remove')}
                 </uui-button>
                 <uui-button
                     slot="actions"
                     look="secondary"
-                    label="Cancel"
+                    label=${this.localize.term('general_cancel')}
                     @click=${() => this._rejectModal()}>
-                    Cancel
+                    ${this.localize.term('general_cancel')}
                 </uui-button>
                 <uui-button
                     slot="actions"
                     look="primary"
                     color="positive"
-                    label="Save"
+                    label=${this.localize.term('buttons_save')}
                     @click=${this._save}>
-                    Save
+                    ${this.localize.term('buttons_save')}
                 </uui-button>
             </umb-body-layout>
         `;

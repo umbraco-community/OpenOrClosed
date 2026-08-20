@@ -71,7 +71,6 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
                 data: {
                     ranges,
                     index,
-                    use24Hour: this._use24Hour,
                     showAppointmentOnly: this._showAppointmentOnly,
                 },
             });

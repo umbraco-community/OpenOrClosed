@@ -77,7 +77,6 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                 data: {
                     ranges: this._hours,
                     index,
-                    use24Hour: this.data?.use24Hour ?? true,
                     showAppointmentOnly: this.data?.showAppointmentOnly ?? false,
                 },
             });

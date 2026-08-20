@@ -70,7 +70,6 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
                 data: {
                     ranges: this._schedule.defaultHours,
                     index,
-                    use24Hour: this._use24Hour,
                     showAppointmentOnly: this._showAppointmentOnly,
                 },
             });
