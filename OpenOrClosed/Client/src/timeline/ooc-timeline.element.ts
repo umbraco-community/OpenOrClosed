@@ -2,10 +2,10 @@ import {
     css,
     customElement,
     html,
-    LitElement,
     property,
     state,
 } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import {
     createRange,
     DAY_MINUTES,
@@ -21,11 +21,11 @@ import {
 /**
  * One 00:00-24:00 track carrying any number of non-overlapping ranges.
  *
- * Knows nothing about days, holidays or Umbraco, so the weekly editor, the holidays default track
- * and the per-holiday track can all use it unchanged.
+ * Knows nothing about days or holidays, so the weekly editor, the holidays default track and
+ * the per-holiday track can all use it unchanged. It does depend on Umbraco, for localisation.
  */
 @customElement('ooc-timeline')
-export class OocTimelineElement extends LitElement {
+export class OocTimelineElement extends UmbLitElement {
     @property({ type: Array })
     ranges: HoursRange[] = [];
 
@@ -41,6 +41,9 @@ export class OocTimelineElement extends LitElement {
     /** Prefixed onto every block's accessible name, e.g. "Monday". */
     @property({ type: String })
     trackLabel = '';
+
+    /** Below this, the times are unreadable and the icons carry the meaning instead. */
+    private static readonly NARROW_PERCENT = 6;
 
     /** How long a range created by clicking empty track should be. */
     @property({ type: Number })
@@ -65,7 +68,9 @@ export class OocTimelineElement extends LitElement {
     protected _accessibleName(range: HoursRange): string {
         const parts = [this.trackLabel, formatRange(range, this.use24Hour)];
         if (range.label) parts.push(range.label);
-        if (range.byAppointmentOnly) parts.push('by appointment only');
+        if (range.byAppointmentOnly) {
+            parts.push(this.localize.term('openOrClosed_byAppointmentOnlyShort'));
+        }
         return parts.filter(Boolean).join(', ');
     }
 
@@ -121,7 +126,9 @@ export class OocTimelineElement extends LitElement {
     };
 
     private _onTrackPointerDown = (event: PointerEvent) => {
-        if (event.target !== event.currentTarget) return;
+        // Primary button only - right-clicking the track should open a context menu, not
+        // silently add hours.
+        if (event.button !== 0 || event.target !== event.currentTarget) return;
 
         const created = createRange(
             this.ranges,
@@ -141,7 +148,11 @@ export class OocTimelineElement extends LitElement {
 
         event.preventDefault();
         const created = createRange(this.ranges, gap.start, this.defaultDurationMinutes, this.snapMinutes);
-        if (created) this._commit(created);
+        if (created) {
+            this._commit(created);
+            // The new range is wherever sorting put it - find it by its start time.
+            void this._focusBlock(created.findIndex((range) => parseTime(range.start) === gap.start));
+        }
     };
 
     private _onBlockKeydown(event: KeyboardEvent, index: number) {
@@ -159,6 +170,7 @@ export class OocTimelineElement extends LitElement {
             case 'Backspace':
                 event.preventDefault();
                 this._commit(this.ranges.filter((_, i) => i !== index));
+                void this._focusBlock(index);
                 return;
 
             case 'ArrowLeft':
@@ -177,6 +189,23 @@ export class OocTimelineElement extends LitElement {
             default:
                 return;
         }
+    }
+
+    /**
+     * Puts focus on a block after the set has changed. Without this, deleting a block drops the
+     * keyboard user at the top of the document, and creating one leaves focus behind on the track.
+     */
+    private async _focusBlock(index: number) {
+        await this.updateComplete;
+
+        const blocks = [...this.renderRoot.querySelectorAll<HTMLElement>('.block')];
+        if (blocks.length === 0) {
+            this.renderRoot.querySelector<HTMLElement>('.track')?.focus();
+            return;
+        }
+
+        // Clamp: deleting the last block means focusing the one that is now last.
+        blocks[Math.min(index, blocks.length - 1)].focus();
     }
 
     private _emitEdit(index: number) {
@@ -202,6 +231,7 @@ export class OocTimelineElement extends LitElement {
     static styles = css`
         :host {
             display: block;
+            position: relative;
         }
 
         .track {
@@ -255,6 +285,11 @@ export class OocTimelineElement extends LitElement {
             text-overflow: ellipsis;
         }
 
+        /* Too narrow to read - the label and appointment icons carry the meaning. */
+        .block.narrow .times {
+            display: none;
+        }
+
         /* The strip stays the hit area; min() shrinks it on short ranges so the middle is still grabbable. */
         .grip {
             position: absolute;
@@ -306,14 +341,16 @@ export class OocTimelineElement extends LitElement {
     protected _renderBlock(range: HoursRange, index: number) {
         const start = parseTime(range.start);
         const end = parseTime(range.end);
+        const widthPercent = this._percent(end - start);
+        const narrow = widthPercent < OocTimelineElement.NARROW_PERCENT;
 
         return html`
             <button
                 type="button"
-                class="block ${this._dragIndex === index ? 'dragging' : ''}"
+                class="block ${this._dragIndex === index ? 'dragging' : ''} ${narrow ? 'narrow' : ''}"
                 part="block"
                 data-index=${index}
-                style="left:${this._percent(start)}%;width:${this._percent(end - start)}%"
+                style="left:${this._percent(start)}%;width:${widthPercent}%"
                 aria-label=${this._accessibleName(range)}
                 @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'move')}
                 @click=${() => this._emitEdit(index)}
