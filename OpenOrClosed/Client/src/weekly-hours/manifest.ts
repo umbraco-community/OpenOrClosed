@@ -5,7 +5,7 @@ export const manifests: Array<UmbExtensionManifest> = [
         name: 'Weekly Hours Property Editor UI',
         element: () => import('./ooc-weekly-hours.element.js'),
         meta: {
-            label: 'Weekly Hours',
+            label: '#openOrClosed_weeklyHoursLabel',
             icon: 'icon-time',
             group: 'richContent',
             propertyEditorSchemaAlias: 'OpenOrClosed.WeeklyHours',
@@ -13,26 +13,26 @@ export const manifests: Array<UmbExtensionManifest> = [
                 properties: [
                     {
                         alias: 'time_24hr',
-                        label: 'Time Format',
-                        description: '12/24 hour clock',
+                        label: '#openOrClosed_settingTimeFormat',
+                        description: '#openOrClosed_settingTimeFormatDescription',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                     {
                         alias: 'defaultOpen',
-                        label: 'Default Open Time',
-                        description: 'Start time for a newly added set of hours - defaults to 09:00',
+                        label: '#openOrClosed_settingDefaultOpen',
+                        description: '#openOrClosed_settingDefaultOpenDescription',
                         propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.TimeInput',
                     },
                     {
                         alias: 'defaultClose',
-                        label: 'Default Close Time',
-                        description: 'End time for a newly added set of hours - defaults to 17:00',
+                        label: '#openOrClosed_settingDefaultClose',
+                        description: '#openOrClosed_settingDefaultCloseDescription',
                         propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.TimeInput',
                     },
                     {
                         alias: 'showAppointmentOnly',
-                        label: 'Enable Appointment Only?',
-                        description: 'Show the appointment only option for a set of hours',
+                        label: '#openOrClosed_settingAppointmentOnly',
+                        description: '#openOrClosed_settingAppointmentOnlyDescription',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
                 ],

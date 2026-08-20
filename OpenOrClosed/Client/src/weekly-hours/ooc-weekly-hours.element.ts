@@ -5,7 +5,13 @@ import type {
     UmbPropertyEditorConfigCollection,
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
-import { parseTime, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
+import {
+    DAY_MINUTES,
+    formatAxis,
+    parseTime,
+    sanitizeRanges,
+    type HoursRange,
+} from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
 
@@ -14,16 +20,22 @@ interface WeeklyHoursDay {
     ranges: HoursRange[];
 }
 
-/** Monday first. The stored `day` values follow System.DayOfWeek, where Sunday is 0. */
-const WEEK = [
-    { day: 1, name: 'Monday' },
-    { day: 2, name: 'Tuesday' },
-    { day: 3, name: 'Wednesday' },
-    { day: 4, name: 'Thursday' },
-    { day: 5, name: 'Friday' },
-    { day: 6, name: 'Saturday' },
-    { day: 0, name: 'Sunday' },
-];
+/**
+ * Monday first. The stored `day` values follow System.DayOfWeek, where Sunday is 0.
+ *
+ * Names are not listed here: they come from the browser's culture, which is also what keeps
+ * them in step with the server's CultureInfo.CurrentCulture.
+ */
+const WEEK = [1, 2, 3, 4, 5, 6, 0];
+
+/** 4 January 2026 is a Sunday, so this array is indexed directly by System.DayOfWeek. */
+const DAY_NAME_REFERENCE = [4, 5, 6, 7, 8, 9, 10].map((date) => new Date(2026, 0, date));
+
+function dayName(day: number): string {
+    return new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+        DAY_NAME_REFERENCE[day],
+    );
+}
 
 @customElement('ooc-weekly-hours')
 export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyEditorUiElement {
@@ -122,18 +134,20 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
 
     private _renderAxis() {
         const ticks = [
-            { at: 0, text: '12 AM', cls: 'first' },
-            { at: 25, text: '06 AM', cls: '' },
-            { at: 50, text: '12 PM', cls: '' },
-            { at: 75, text: '06 PM', cls: '' },
-            { at: 100, text: '12 AM', cls: 'last' },
+            { at: 0, minutes: 0, cls: 'first' },
+            { at: 25, minutes: 6 * 60, cls: '' },
+            { at: 50, minutes: 12 * 60, cls: '' },
+            { at: 75, minutes: 18 * 60, cls: '' },
+            { at: 100, minutes: DAY_MINUTES, cls: 'last' },
         ];
 
         return html`<div class="row">
             <div></div>
             <div class="axis">
                 ${ticks.map(
-                    (tick) => html`<span class="tick ${tick.cls}" style="left:${tick.at}%">${tick.text}</span>`,
+                    (tick) => html`<span class="tick ${tick.cls}" style="left:${tick.at}%"
+                        >${formatAxis(tick.minutes, this._use24Hour)}</span
+                    >`,
                 )}
             </div>
         </div>`;
@@ -143,17 +157,17 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         return html`
             ${this._renderAxis()}
             ${WEEK.map(
-                (entry) => html`
+                (day) => html`
                     <div class="row">
-                        <div class="day">${entry.name}</div>
+                        <div class="day">${dayName(day)}</div>
                         <ooc-timeline
-                            .ranges=${this._rangesFor(entry.day)}
+                            .ranges=${this._rangesFor(day)}
                             .use24Hour=${this._use24Hour}
                             .showAppointmentOnly=${this._showAppointmentOnly}
                             .defaultDurationMinutes=${this._defaultDuration}
-                            .trackLabel=${entry.name}
-                            @change=${(e: CustomEvent) => this._setRanges(entry.day, e.detail.ranges)}
-                            @edit-range=${(e: CustomEvent) => this._editRange(entry.day, e.detail.index)}>
+                            .trackLabel=${dayName(day)}
+                            @change=${(e: CustomEvent) => this._setRanges(day, e.detail.ranges)}
+                            @edit-range=${(e: CustomEvent) => this._editRange(day, e.detail.index)}>
                         </ooc-timeline>
                     </div>
                 `,

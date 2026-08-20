@@ -3,6 +3,7 @@ import {
     boundsFor,
     createRange,
     DAY_MINUTES,
+    formatAxis,
     formatDisplay,
     formatTime,
     gapAt,
@@ -284,5 +285,26 @@ describe('sanitizeRanges', () => {
     it('returns an empty array for anything that is not an array', () => {
         expect(sanitizeRanges(undefined)).toEqual([]);
         expect(sanitizeRanges('nope')).toEqual([]);
+    });
+});
+
+describe('formatAxis', () => {
+    it('gives 24-hour labels in full, including 24:00', () => {
+        expect(formatAxis(0, true)).toBe('00:00');
+        expect(formatAxis(6 * 60, true)).toBe('06:00');
+        expect(formatAxis(DAY_MINUTES, true)).toBe('24:00');
+    });
+
+    it('drops the minutes in 12-hour mode, so the labels stay narrow', () => {
+        // formatDisplay would give "12:00 AM" here, which overflows the axis.
+        expect(formatAxis(0, false)).toBe('12 AM');
+        expect(formatAxis(6 * 60, false)).toBe('6 AM');
+        expect(formatAxis(12 * 60, false)).toBe('12 PM');
+        expect(formatAxis(18 * 60, false)).toBe('6 PM');
+        expect(formatAxis(DAY_MINUTES, false)).toBe('12 AM');
+    });
+
+    it('keeps the minutes when they are not zero', () => {
+        expect(formatAxis(6 * 60 + 30, false)).toBe('6:30 AM');
     });
 });

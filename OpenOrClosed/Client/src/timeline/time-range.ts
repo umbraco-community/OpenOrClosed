@@ -58,6 +58,17 @@ export function formatDisplay(minutes: number, use24Hour: boolean): string {
     return `${hours12}:${remainder.toString().padStart(2, '0')} ${meridiem}`;
 }
 
+/**
+ * A compact label for the time axis. Unlike formatDisplay this drops a zero minute component,
+ * because "12:00 AM" is too wide for the axis gutter and the ticks are centre-aligned.
+ */
+export function formatAxis(minutes: number, use24Hour: boolean): string {
+    if (use24Hour) return formatTime(minutes);
+
+    const display = formatDisplay(minutes, false);
+    return display.replace(':00', '');
+}
+
 export function formatRange(range: HoursRange, use24Hour: boolean): string {
     return `${formatDisplay(parseTime(range.start), use24Hour)} – ${formatDisplay(parseTime(range.end), use24Hour)}`;
 }
