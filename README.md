@@ -72,6 +72,12 @@ correct precedence - a matching holiday replaces that day's weekly hours entirel
     var openNow = weekly.IsOpenAt(DateTime.Now, holidays);
 }
 
+@functions {
+    // A TimeSpan of exactly 24:00 carries Days == 1 and Hours == 0, so "hh\:mm" renders it as
+    // "00:00" - open until midnight would read as closing at the start of the day.
+    static string Clock(TimeSpan time) => $"{(int)time.TotalHours:00}:{time.Minutes:00}";
+}
+
 <p>We are @(openNow ? "open" : "closed") right now.</p>
 
 @if (today.Holiday is not null)
@@ -84,13 +90,40 @@ correct precedence - a matching holiday replaces that day's weekly hours entirel
     <ul>
         @foreach (var range in today.Ranges)
         {
-            <li>@range.Start.ToString(@"hh\:mm") - @range.End.ToString(@"hh\:mm")</li>
+            <li>
+                @Clock(range.Start) - @Clock(range.End)
+                @if (range.Label is not null)
+                {
+                    <text>(@range.Label)</text>
+                }
+                @if (range.ByAppointmentOnly)
+                {
+                    <text>- by appointment only</text>
+                }
+            </li>
         }
     </ul>
 }
 else
 {
     <p>Closed today.</p>
+}
+```
+
+To answer "when are you open" for more than one date, call `OpeningHoursOn` per date rather than
+reading the weekly property directly — a holiday only applies to the dates it covers:
+
+```csharp
+@foreach (var offset in Enumerable.Range(0, 7))
+{
+    var date = DateOnly.FromDateTime(DateTime.Now).AddDays(offset);
+    var day = weekly.OpeningHoursOn(date, holidays);
+
+    <tr>
+        <td>@date.ToString("ddd d MMM")</td>
+        <td>@(day.Holiday?.Name ?? "-")</td>
+        <td>@(day.IsOpen ? string.Join(", ", day.Ranges.Select(r => $"{Clock(r.Start)} - {Clock(r.End)}")) : "Closed")</td>
+    </tr>
 }
 ```
 
@@ -107,6 +140,9 @@ A few behaviours worth knowing:
   empty default track.
 * **A yearly holiday spanning New Year still matches in January** - a 27 December to 2 January range
   applies on 1 January of the following year.
+* **A range ending at midnight is stored as `24:00`, which is a `TimeSpan` of 24 hours.** Its
+  `Hours` component is 0 and its `Days` component is 1, so `ToString(@"hh\:mm")` renders it as
+  `00:00`. Format from `TotalHours`, as the sample above does.
 * **`Remove Expired Holidays` affects the read path only.** With it on, finished holidays are absent
   from the converted value and the Delivery API, but the editor still shows them dimmed and marked
   *Expired*, so a mistyped date can be found and corrected. Use the **Remove expired** button to

@@ -1,7 +1,27 @@
-﻿@using Umbraco.Cms.Web.Common.Views
+﻿@using OpenOrClosed.Core.Extensions
+@using OpenOrClosed.Core.Models
+@using Umbraco.Cms.Web.Common.Views
 @inherits UmbracoViewPage<Umbraco.Cms.Web.Common.PublishedModels.Test>
 @{
     Layout = null;
+
+    var weekly = Model.WeeklyHours ?? [];
+    var holidays = Model.Holidays;
+
+    var now = DateTime.Now;
+    var today = weekly.OpeningHoursOn(DateOnly.FromDateTime(now), holidays);
+    var openNow = weekly.IsOpenAt(now, holidays);
+}
+
+@functions {
+    // A TimeSpan of exactly 24:00 carries Days == 1 and Hours == 0, so "hh\:mm" renders it as
+    // "00:00" - open until midnight would read as closing at the start of the day.
+    static string Clock(TimeSpan time) => $"{(int)time.TotalHours:00}:{time.Minutes:00}";
+
+    static string Hours(IReadOnlyList<HoursRange> ranges) =>
+        ranges.Count == 0
+            ? "Closed"
+            : string.Join(", ", ranges.Select(range => $"{Clock(range.Start)} - {Clock(range.End)}"));
 }
 
 <html>
@@ -9,6 +29,157 @@
 
 </head>
 <body>
+    <h2>Weekly Hours and Holidays - right now</h2>
+    <p>
+        <strong>We are @(openNow ? "open" : "closed") right now.</strong>
+        (@now.ToString("dddd d MMMM, HH:mm"))
+    </p>
+    @if (today.Holiday is not null)
+    {
+        <p>
+            Today is <strong>@today.Holiday.Name</strong>
+            (@today.Holiday.HoursMode.ToString().ToLowerInvariant() hours@(today.Holiday.RepeatYearly ? ", repeats yearly" : "")).
+        </p>
+    }
+    <p>Today's hours: @Hours(today.Ranges)</p>
+
+    <h2>The week ahead</h2>
+    <p>
+        <code>OpeningHoursOn</code> resolves each date on its own: a matching holiday replaces that
+        day's weekly hours entirely, so this is the only correct way to answer "when are you open".
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Weekly hours</th>
+                <th>Holiday</th>
+                <th>Applies</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var offset in Enumerable.Range(0, 7))
+            {
+                var date = DateOnly.FromDateTime(now).AddDays(offset);
+                var resolved = weekly.OpeningHoursOn(date, holidays);
+                var stored = weekly.FirstOrDefault(day => day.Day == date.DayOfWeek);
+
+                <tr>
+                    <td>@date.ToString("ddd d MMM")</td>
+                    <td>@Hours(stored?.Ranges ?? [])</td>
+                    <td>@(resolved.Holiday?.Name ?? "-")</td>
+                    <td>@Hours(resolved.Ranges)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (holidays is not null && holidays.Holidays.Count > 0)
+    {
+        var sample = holidays.Holidays[0];
+        var onHoliday = weekly.OpeningHoursOn(sample.Start, holidays);
+
+        <p>
+            The next seven days may hold no holiday. For a date that does -
+            @sample.Start.ToString("d MMM yyyy"), <strong>@sample.Name</strong> - the weekly hours are
+            replaced entirely: <strong>@Hours(onHoliday.Ranges)</strong>.
+        </p>
+    }
+
+    <h2>Weekly Hours</h2>
+    <p>The converter always returns seven days, Monday first, whether or not the stored value has one.</p>
+    <table>
+        <tbody>
+            @foreach (var day in weekly)
+            {
+                <tr>
+                    <td>
+                        @day.DayName (@((int)day.Day))<br />
+                        Is Open: @day.IsOpen
+                    </td>
+                    <td>
+                        @if (day.Ranges.Count == 0)
+                        {
+                            <text>Closed</text>
+                        }
+                        else
+                        {
+                            <table>
+                                <tbody>
+                                    @foreach (var range in day.Ranges)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @Clock(range.Start) <text> - </text> @Clock(range.End)
+                                                (@range.Duration.TotalHours hrs)<br />
+                                                Label: @(range.Label ?? "-")<br />
+                                                <text>By Appointment Only:</text> @range.ByAppointmentOnly
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Holidays</h2>
+    <p>Default holiday hours: @Hours(holidays?.DefaultHours ?? [])</p>
+    @if (holidays is null || holidays.Holidays.Count == 0)
+    {
+        <p>No holidays. With <strong>Remove Expired Holidays</strong> on, finished one-off holidays are
+            absent here while still visible in the editor.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Dates</th>
+                    <th>Yearly</th>
+                    <th>Mode</th>
+                    <th>Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var holiday in holidays.Holidays)
+                {
+                    <tr>
+                        <td>@holiday.Name</td>
+                        <td>
+                            @holiday.Start.ToString("d MMM yyyy")
+                            @if (holiday.End != holiday.Start)
+                            {
+                                <text> - </text>@holiday.End.ToString("d MMM yyyy")
+                            }
+                        </td>
+                        <td>@holiday.RepeatYearly</td>
+                        <td>@holiday.HoursMode</td>
+                        <td>
+                            @switch (holiday.HoursMode)
+                            {
+                                case HolidayHoursMode.Custom:
+                                    @Hours(holiday.Hours)
+                                    break;
+                                case HolidayHoursMode.Default:
+                                    // An empty default track means a Default holiday is closed.
+                                    @Hours(holidays.DefaultHours)
+                                    break;
+                                default:
+                                    <text>Closed</text>
+                                    break;
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
     <h2>Standard Business Hours</h2>
     <table>
         <tbody>
