@@ -41,6 +41,7 @@ export default {
 
         // Holiday modal
         holiday: 'Holiday',
+        fieldHours: 'Hours',
         startsOn: 'Starts on',
         endsOn: 'Ends on',
         repeatYearly: 'Repeat yearly',

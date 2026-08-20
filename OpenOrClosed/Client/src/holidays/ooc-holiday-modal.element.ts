@@ -9,14 +9,15 @@ import {
     holidayConsistencyError,
     todayIso,
     validateHoliday,
+    type HolidayError,
     type HolidayHoursMode,
 } from './holiday.js';
 import type { OocHolidayModalData, OocHolidayModalValue } from './holiday-modal.token.js';
 
-const MODES: Array<{ value: HolidayHoursMode; label: string }> = [
-    { value: 'default', label: 'Default' },
-    { value: 'closed', label: 'Closed' },
-    { value: 'custom', label: 'Custom' },
+const MODES: Array<{ value: HolidayHoursMode; key: string }> = [
+    { value: 'default', key: 'general_default' },
+    { value: 'closed', key: 'openOrClosed_hoursClosed' },
+    { value: 'custom', key: 'openOrClosed_hoursCustom' },
 ];
 
 /**
@@ -34,7 +35,7 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
     @state() private _repeatYearly = false;
     @state() private _hoursMode: HolidayHoursMode = 'default';
     @state() private _hours: HoursRange[] = [];
-    @state() private _error: string | null = null;
+    @state() private _error: HolidayError | null = null;
 
     /** The modal manager sets `data` asynchronously, so seed the fields the first time it arrives. */
     #seeded = false;
@@ -91,8 +92,17 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
      * Shown as the editor types. Falls back to the Save-time error so a required-field message
      * raised by Save is not wiped out by the next keystroke.
      */
-    private get _visibleError(): string | null {
+    private get _visibleError(): HolidayError | null {
         return holidayConsistencyError(this._current) ?? this._error;
+    }
+
+    /** Turns a validation code into a sentence. The pure module cannot localise; this can. */
+    private _errorText(error: HolidayError | null): string | null {
+        return error
+            ? this.localize.term(
+                  `openOrClosed_error${error.charAt(0).toUpperCase()}${error.slice(1)}`,
+              )
+            : null;
     }
 
     private _save() {
@@ -134,15 +144,15 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
     private _renderHoursMode() {
         return html`
             <div class="field">
-                <div class="label">Hours</div>
+                <div class="label">${this.localize.term('openOrClosed_fieldHours')}</div>
                 <uui-button-group>
                     ${MODES.map(
                         (mode) => html`
                             <uui-button
                                 look=${this._hoursMode === mode.value ? 'primary' : 'secondary'}
-                                label=${mode.label}
+                                label=${this.localize.term(mode.key)}
                                 @click=${() => (this._hoursMode = mode.value)}>
-                                ${mode.label}
+                                ${this.localize.term(mode.key)}
                             </uui-button>
                         `,
                     )}
@@ -157,29 +167,30 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
 
         return html`<div class="field hint">
             ${ranges.length === 0
-                ? 'No default holiday hours are set, so this holiday is closed.'
-                : `Uses the default holiday hours: ${ranges
-                      .map((range) => formatRange(range, use24Hour))
-                      .join(', ')}.`}
+                ? this.localize.term('openOrClosed_defaultHoursEmptyHint')
+                : this.localize.term(
+                      'openOrClosed_defaultHoursHint',
+                      ranges.map((range) => formatRange(range, use24Hour)).join(', '),
+                  )}
         </div>`;
     }
 
     render() {
         return html`
-            <umb-body-layout headline=${this._name || 'Holiday'}>
+            <umb-body-layout headline=${this._name || this.localize.term('openOrClosed_holiday')}>
                 <uui-box>
                     <div class="field">
-                        <div class="label">Name</div>
+                        <div class="label">${this.localize.term('general_name')}</div>
                         <uui-input
                             .value=${this._name}
-                            label="Name"
+                            label=${this.localize.term('general_name')}
                             @input=${(e: Event) => (this._name = (e.target as HTMLInputElement).value)}>
                         </uui-input>
                     </div>
 
                     <div class="field dates">
                         <div>
-                            <div class="label">Starts on</div>
+                            <div class="label">${this.localize.term('openOrClosed_startsOn')}</div>
                             <!--
                               Deliberately unconstrained. A max of _end would stop the start ever
                               moving past the end, which is exactly the gesture _setStart exists to
@@ -188,18 +199,18 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                             <uui-input
                                 type="date"
                                 .value=${this._start}
-                                label="Starts on"
+                                label=${this.localize.term('openOrClosed_startsOn')}
                                 @change=${(e: Event) =>
                                     this._setStart((e.target as HTMLInputElement).value)}>
                             </uui-input>
                         </div>
                         <div>
-                            <div class="label">Ends on</div>
+                            <div class="label">${this.localize.term('openOrClosed_endsOn')}</div>
                             <uui-input
                                 type="date"
                                 .value=${this._end}
                                 .min=${this._start}
-                                label="Ends on"
+                                label=${this.localize.term('openOrClosed_endsOn')}
                                 @change=${(e: Event) =>
                                     (this._end = (e.target as HTMLInputElement).value)}>
                             </uui-input>
@@ -209,11 +220,13 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                     <div class="field">
                         <uui-toggle
                             .checked=${this._repeatYearly}
-                            label="Repeat yearly"
+                            label=${this.localize.term('openOrClosed_repeatYearly')}
                             @change=${() => (this._repeatYearly = !this._repeatYearly)}>
-                            Repeat yearly
+                            ${this.localize.term('openOrClosed_repeatYearly')}
                         </uui-toggle>
-                        <div class="hint">A repeating holiday never expires.</div>
+                        <div class="hint">
+                            ${this.localize.term('openOrClosed_repeatYearlyHint')}
+                        </div>
                     </div>
 
                     ${this._renderHoursMode()}
@@ -224,14 +237,15 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                                   .ranges=${this._hours}
                                   .use24Hour=${this.data?.use24Hour ?? true}
                                   .showAppointmentOnly=${this.data?.showAppointmentOnly ?? false}
-                                  .trackLabel=${this._name || 'Holiday'}
+                                  .trackLabel=${this._name ||
+                                  this.localize.term('openOrClosed_holiday')}
                                   @change=${(e: CustomEvent) => (this._hours = e.detail.ranges)}
                                   @edit-range=${(e: CustomEvent) => this._editRange(e.detail.index)}>
                               </ooc-timeline>
                           </div>`
                         : ''}
                     ${this._visibleError
-                        ? html`<div class="error">${this._visibleError}</div>`
+                        ? html`<div class="error">${this._errorText(this._visibleError)}</div>`
                         : ''}
                 </uui-box>
 
@@ -239,24 +253,24 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                     slot="actions"
                     look="secondary"
                     color="danger"
-                    label="Remove"
+                    label=${this.localize.term('general_remove')}
                     @click=${this._remove}>
-                    Remove
+                    ${this.localize.term('general_remove')}
                 </uui-button>
                 <uui-button
                     slot="actions"
                     look="secondary"
-                    label="Cancel"
+                    label=${this.localize.term('general_cancel')}
                     @click=${() => this._rejectModal()}>
-                    Cancel
+                    ${this.localize.term('general_cancel')}
                 </uui-button>
                 <uui-button
                     slot="actions"
                     look="primary"
                     color="positive"
-                    label="Save"
+                    label=${this.localize.term('buttons_save')}
                     @click=${this._save}>
-                    Save
+                    ${this.localize.term('buttons_save')}
                 </uui-button>
             </umb-body-layout>
         `;
