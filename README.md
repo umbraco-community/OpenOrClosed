@@ -134,27 +134,13 @@ A few behaviours worth knowing:
 * The existing Standard and Special Business Hours editors are untouched. See
   [Choosing between them](#choosing-between-them) for which pair to use; there is no migration
   between the pairs.
-
-### Version 17.1.3
-
 * Added Delivery API support to the Standard and Special Business Hours value converters.
-* Fixed stale date conversion. Date-relative logic ran in `ConvertSourceToIntermediate`, whose
-  result is cached for the lifetime of the element, so times were frozen at whenever the cache was
-  warmed. It now runs in `ConvertIntermediateToObject` with a cache level of `None`.
-* Fixed standard hours anchoring to the wrong week when today is a Sunday.
-* Fixed `HasHours`, which was never set and so was always `false`.
-* Converters return an empty enumerable rather than `null` for an empty value.
-* Fixed `removeOldDates` throwing for any stored form other than a boxed `bool`.
-* Fixed `reversed` mode toggling hours against the raw flag rather than the displayed state.
-* Fixed every time field blanking when **Time Format** was off — a 12-hour `"9:00 AM"` string was
-  being discarded by `<input type="time">`.
-* Editors now re-read `value` and `config` when they change, not only on connect.
-* Fixed special dates being compared as UTC, which dropped today's entry in negative UTC offsets.
-* Per-day validation messages are now rendered rather than computed and thrown away.
-* Fixed the upgrade migration matching only `EditorAlias`, and issuing a query with an empty
-  `IN ()` clause when nothing matched.
-* Fixed the test site's project reference, which contained a space in `"../"` and so never
-  referenced the package at all.
+* The backoffice UI is now localisable. The package ships an `en` dictionary under the
+  `openOrClosed` area; a translation is a single file plus a `localization` manifest entry.
+* Backoffice day names and the timeline axis now follow the current culture and the
+  **Time Format** setting rather than being hardcoded English.
+* Accessibility: holiday rows are reachable and operable by keyboard, focus is kept when a
+  range is added or deleted, and block tooltips appear on keyboard focus as well as hover.
 
 ### Version 17.1.2
 
