@@ -386,7 +386,9 @@ export class OocTimelineElement extends UmbLitElement {
                     @pointerdown=${(e: PointerEvent) => this._startDrag(e, index, 'end')}></i>
                 ${range.label ? html`<uui-icon name="icon-notepad" title=${range.label}></uui-icon>` : ''}
                 ${this.showAppointmentOnly && range.byAppointmentOnly
-                    ? html`<uui-icon name="icon-user" title="By appointment only"></uui-icon>`
+                    ? html`<uui-icon
+                          name="icon-user"
+                          title=${this.localize.term('openOrClosed_byAppointmentOnly')}></uui-icon>`
                     : ''}
                 <span class="times">${formatRange(range, this.use24Hour)}</span>
                 <span class="tooltip" role="presentation">${this._accessibleName(range)}</span>
