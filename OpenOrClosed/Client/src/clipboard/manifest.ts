@@ -1,5 +1,6 @@
 import { oocClipboardManifests } from './manifest-factory.js';
 import {
+    OOC_HOLIDAYS_CLIPBOARD_ENTRY_VALUE_TYPE,
     OOC_SPECIAL_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
     OOC_STANDARD_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
     OOC_WEEKLY_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
@@ -33,5 +34,12 @@ export const manifests: Array<UmbExtensionManifest> = [
         propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.WeeklyHours',
         entryValueType: OOC_WEEKLY_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
         pasteTranslatorApi: () => import('../weekly-hours/clipboard/paste.translator.js'),
+    }),
+    ...oocClipboardManifests({
+        editorName: 'Holidays',
+        aliasSegment: 'Holidays',
+        propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.Holidays',
+        entryValueType: OOC_HOLIDAYS_CLIPBOARD_ENTRY_VALUE_TYPE,
+        pasteTranslatorApi: () => import('../holidays/clipboard/paste.translator.js'),
     }),
 ];
