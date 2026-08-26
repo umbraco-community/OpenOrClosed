@@ -16,7 +16,7 @@ import {
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
 
-interface WeeklyHoursDay {
+export interface WeeklyHoursDay {
     day: number;
     ranges: HoursRange[];
 }

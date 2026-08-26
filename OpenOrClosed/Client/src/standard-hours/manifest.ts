@@ -1,6 +1,3 @@
-import { oocClipboardManifests } from '../clipboard/manifest-factory.js';
-import { OOC_STANDARD_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE } from '../clipboard/constants.js';
-
 export const manifests: Array<UmbExtensionManifest> = [{
 	type: 'propertyEditorUi',
 	alias: 'OpenOrClosed.PropertyEditorUi.StandardHours',
@@ -100,11 +97,4 @@ export const manifests: Array<UmbExtensionManifest> = [{
             ],
         },
 	},
-},
-...oocClipboardManifests({
-	editorName: 'Standard Business Hours',
-	aliasSegment: 'StandardHours',
-	propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.StandardHours',
-	entryValueType: OOC_STANDARD_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
-	pasteTranslatorApi: () => import('./clipboard/paste.translator.js'),
-})];
+}];
