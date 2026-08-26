@@ -42,6 +42,23 @@ Named date ranges that override the weekly schedule, with a shared **Default hol
 timeline at the top and a per-holiday override of `Default`, `Closed` or `Custom`. A holiday can
 repeat yearly, in which case it never expires.
 
+## Copying hours between nodes
+
+All four editors support Umbraco's property clipboard. Use the property's action menu to **Copy**
+its value, then **Replace** on the same property on another node — useful for rolling a set of bank
+holiday closures out across branch locations.
+
+Two things worth knowing before you rely on it:
+
+* **The clipboard is per browser.** Umbraco stores entries in the browser's local storage, so what
+  you copy is not visible to your colleagues or on your other devices.
+* **Pasting is one node at a time.** Umbraco has no bulk "apply this property to the nodes I have
+  selected" action, so a hundred branches means a hundred pastes. Copied entries are named
+  `<Node name> - <Property label>`, so the one you want stays easy to find in the picker.
+
+Copying between *different* editors is deliberately not possible — a Weekly Hours value cannot be
+pasted into Special Business Hours, even though both describe opening times.
+
 ## Choosing between them
 
 The package ships two pairs of hours editors. They do not interact, so pick one pair per site:
@@ -179,6 +196,10 @@ A few behaviours worth knowing:
   range is added or deleted, and block tooltips appear on keyboard focus as well as hover.
 * All four property editors now dispatch `UmbChangeEvent` rather than the deprecated
   `property-value-change`, which Umbraco removes in 20.0.0.
+* All four property editors now support Umbraco's property clipboard: **Copy** an editor's value
+  from one node and **Replace** it on another. Note that the clipboard is per browser, and that
+  pasting is one node at a time — Umbraco has no bulk apply. See
+  [Copying hours between nodes](#copying-hours-between-nodes).
 
 ### Version 17.1.2
 

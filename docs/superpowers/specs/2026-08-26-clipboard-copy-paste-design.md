@@ -83,6 +83,7 @@ No `propertyValueCloner` is needed: `UmbPropertyValueCloneController` returns th
 Client/src/clipboard/
   constants.ts                     the four entry value types
   manifest-factory.ts              the five manifests for one editor
+  manifest.ts                      all four editors' registrations
   hours-copy.translator.ts         shared by all four editors
   hours-copy.translator.test.ts
   entry-value.ts                   the versioned wrapper: type, wrap, unwrap
@@ -93,7 +94,11 @@ Client/src/weekly-hours/clipboard/paste.translator.ts     (+ .test.ts)
 Client/src/holidays/clipboard/paste.translator.ts         (+ .test.ts)
 ```
 
-Each editor's existing `manifest.ts` spreads its factory output alongside the `propertyEditorUi` manifest it already exports.
+All four registrations live in `src/clipboard/manifest.ts`, spread into `bundle.manifests.ts` last, after every property editor UI they reference.
+
+> **Amended during implementation.** This originally had each editor's own `manifest.ts` spread its factory output, on the grounds that `bundle.manifests.ts` would then need no change. That does not work. The factory imports Umbraco's condition aliases at *runtime*, and `@umbraco-cms/backoffice/property` touches `document` while it loads — so any node test importing an editor's manifest module dies, and `localization/en.test.ts` imports two of them. Inlining the dependency for vitest only got as far as the DOM access, so the constraint is real rather than a config wrinkle: **an editor's `manifest.ts` cannot carry a runtime backoffice import.** Centralising fixes it, because nothing imports `src/clipboard/manifest.ts` but the bundle.
+>
+> The alternative — hardcoding the two alias strings, as these manifest files already do for `Umb.PropertyEditorUi.Toggle` — was rejected on a verified difference: a misspelled imported constant is a compile error, while a misspelled string literal is not. The `conditions[].alias` field does not constrain the string, so a typo there would silently hide the action instead of failing the build.
 
 ### Entry value types
 
