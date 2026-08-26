@@ -11,7 +11,7 @@
 
 	<!-- NuGet package metadata -->
 	<PropertyGroup>
-		<Version>17.2.0</Version>
+		<Version>17.3.0</Version>
 		<Description>
 			Open or Closed - Yet another Business Hours package!
 
