@@ -3,7 +3,7 @@ import { BusinessHoursBaseElement, type BaseDayInterface, type BaseHoursConfig }
 import { umbBindToValidation } from '@umbraco-cms/backoffice/validation';
 import type { UmbPropertyEditorUiElement } from '@umbraco-cms/backoffice/property-editor';
 
-interface SpecialDay extends BaseDayInterface {
+export interface SpecialDay extends BaseDayInterface {
     date: string | null;
 }
 

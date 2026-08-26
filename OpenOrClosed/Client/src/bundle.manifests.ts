@@ -1,3 +1,4 @@
+import { manifests as clipboard } from './clipboard/manifest'
 import { manifests as holidays } from './holidays/manifest'
 import { manifests as localization } from './localization/manifest'
 import { manifests as specialHours } from './special-hours/manifest'
@@ -16,5 +17,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   ...weeklyHours,
   ...holidays,
   ...rangeModal,
-  ...timeInput
+  ...timeInput,
+  // Last, so every property editor UI it references is already registered.
+  ...clipboard
 ];

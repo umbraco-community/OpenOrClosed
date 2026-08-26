@@ -2,7 +2,7 @@ import { html, css, customElement } from '@umbraco-cms/backoffice/external/lit';
 import { BusinessHoursBaseElement, type BaseDayInterface, type BaseHoursConfig } from '../shared/business-hours-base.element.js';
 import type { UmbPropertyEditorUiElement } from '@umbraco-cms/backoffice/property-editor';
 
-interface StandardDay extends BaseDayInterface {
+export interface StandardDay extends BaseDayInterface {
     dayoftheweek: string;
     day: number | null; // DayOfWeek enum value (0=Sunday, 1=Monday, etc.) or null for holidays
 }
