@@ -167,6 +167,13 @@ A few behaviours worth knowing:
 
 ## Change Log
 
+### Version 17.3.0
+
+* All four property editors now support Umbraco's property clipboard: **Copy** an editor's value
+  from one node and **Replace** it on another. Note that the clipboard is per browser, and that
+  pasting is one node at a time — Umbraco has no bulk apply. See
+  [Copying hours between nodes](#copying-hours-between-nodes).
+
 ### Version 17.2.0
 
 * Added **Weekly Hours** — a recurring Monday-to-Sunday schedule drawn on seven timelines, with
@@ -196,10 +203,6 @@ A few behaviours worth knowing:
   range is added or deleted, and block tooltips appear on keyboard focus as well as hover.
 * All four property editors now dispatch `UmbChangeEvent` rather than the deprecated
   `property-value-change`, which Umbraco removes in 20.0.0.
-* All four property editors now support Umbraco's property clipboard: **Copy** an editor's value
-  from one node and **Replace** it on another. Note that the clipboard is per browser, and that
-  pasting is one node at a time — Umbraco has no bulk apply. See
-  [Copying hours between nodes](#copying-hours-between-nodes).
 
 ### Version 17.1.2
 
