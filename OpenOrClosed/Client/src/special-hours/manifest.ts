@@ -1,3 +1,6 @@
+import { oocClipboardManifests } from '../clipboard/manifest-factory.js';
+import { OOC_SPECIAL_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE } from '../clipboard/constants.js';
+
 export const manifests: Array<UmbExtensionManifest> = [{
 	type: 'propertyEditorUi',
 	alias: 'OpenOrClosed.PropertyEditorUi.SpecialHours',
@@ -97,4 +100,11 @@ export const manifests: Array<UmbExtensionManifest> = [{
             ],
         },
 	},
-}];
+},
+...oocClipboardManifests({
+	editorName: 'Special Business Hours',
+	aliasSegment: 'SpecialHours',
+	propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.SpecialHours',
+	entryValueType: OOC_SPECIAL_HOURS_CLIPBOARD_ENTRY_VALUE_TYPE,
+	pasteTranslatorApi: () => import('./clipboard/paste.translator.js'),
+})];
