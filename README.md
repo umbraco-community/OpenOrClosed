@@ -167,6 +167,15 @@ A few behaviours worth knowing:
 
 ## Change Log
 
+### Version 17.3.1
+
+* **Fixed: a Weekly Hours value upgraded from the Standard Business Hours editor read as closed all
+  week.** That editor writes a *Holidays* row carrying no day at all (`"day": null`), and the stored
+  shape declared `day` as a non-nullable `int` - so the row failed to deserialize, and because a
+  stored value is read leniently (null rather than an exception), the whole week went with it. Rows
+  without a usable day are now skipped, leaving the real days intact. Rows from the older editor
+  carry `hoursOfBusiness` rather than `ranges` and continue to be ignored, as before.
+
 ### Version 17.3.0
 
 * All four property editors now support Umbraco's property clipboard: **Copy** an editor's value

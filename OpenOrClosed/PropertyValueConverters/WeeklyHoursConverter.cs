@@ -59,7 +59,11 @@ public class WeeklyHoursConverter : PropertyValueConverterBase, IDeliveryApiProp
     /// <remarks>Always returns fresh instances - the intermediate is shared and cached.</remarks>
     internal static IEnumerable<WeeklyHoursDay> ExpandWeek(IEnumerable<WeeklyHoursDayDto>? stored)
     {
-        var byDay = stored?.ToLookup(day => (DayOfWeek)day.Day);
+        // Entries without a usable day are skipped rather than allowed to spoil the week: a value left
+        // over from the AngularJS editor carries a "Holidays" row that names no day at all.
+        var byDay = stored?
+            .Where(day => day.Day is >= 0 and <= 6)
+            .ToLookup(day => (DayOfWeek)day.Day!.Value);
 
         return
         [

@@ -106,6 +106,46 @@ public class WeeklyHoursDeliveryApiTests
         days.Should().OnlyContain(d => d.IsOpen == false);
     }
 
+    /// <summary>
+    /// A value written by the AngularJS editor, then edited in this one. The old rows are still there,
+    /// and one of them - the "Holidays" row - names no day at all.
+    /// </summary>
+    private const string StoredValueUpgradedFromTheOldEditor = """
+        [
+          { "dayoftheweek": "Saturday", "day": 6, "isOpen": false, "hoursOfBusiness": [] },
+          { "dayoftheweek": "Holidays", "day": null, "isOpen": false, "hoursOfBusiness": [] },
+          { "day": 1, "ranges": [ { "start": "07:00", "end": "19:00" } ] },
+          { "day": 2, "ranges": [ { "start": "07:00", "end": "19:00" } ] }
+        ]
+        """;
+
+    /// <summary>
+    /// The row naming no day used to refuse the entire document, and a refused document is indistinguishable
+    /// from an empty one - so a site that had upgraded from the old editor quietly read as shut all week.
+    /// </summary>
+    [Fact]
+    public void Convert_SkipsARowThatNamesNoDayRatherThanLosingTheWholeWeek()
+    {
+        var days = DeliveryApiValue(StoredValueUpgradedFromTheOldEditor);
+
+        days.Single(d => d.Day == DayOfWeek.Monday).Ranges.Should().ContainSingle()
+            .Which.Start.Should().Be(TimeSpan.FromHours(7));
+        days.Single(d => d.Day == DayOfWeek.Tuesday).IsOpen.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// And the old rows themselves are simply ignored. They carry <c>hoursOfBusiness</c> rather than
+    /// <c>ranges</c>, so there is nothing in them this editor can show.
+    /// </summary>
+    [Fact]
+    public void Convert_IgnoresRowsFromTheOldEditor()
+    {
+        var days = DeliveryApiValue(StoredValueUpgradedFromTheOldEditor);
+
+        days.Should().HaveCount(7);
+        days.Single(d => d.Day == DayOfWeek.Saturday).IsOpen.Should().BeFalse();
+    }
+
     [Fact]
     public void Convert_DoesNotMutateTheIntermediate()
     {
