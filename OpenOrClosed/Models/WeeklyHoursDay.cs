@@ -26,8 +26,15 @@ public sealed class WeeklyHoursDay
 /// <summary>The stored shape, which holds only the days that have hours.</summary>
 internal sealed class WeeklyHoursDayDto
 {
+    /// <summary>
+    /// Nullable, and not because this editor ever writes a null. A value carried over from the AngularJS
+    /// editor holds a "Holidays" row with <c>"day": null</c>, and a non-nullable int refuses the whole
+    /// document rather than that one row - taking every real day down with it, silently, because
+    /// <see cref="Serialization.StoredValueJson.Deserialize{T}" /> answers null rather than throwing.
+    /// <see cref="ViewModels.DaysViewModel.Day" /> has been nullable for the same reason all along.
+    /// </summary>
     [JsonPropertyName("day")]
-    public int Day { get; init; }
+    public int? Day { get; init; }
 
     [JsonPropertyName("ranges")]
     public List<HoursRange> Ranges { get; init; } = [];
