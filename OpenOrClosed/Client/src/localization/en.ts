@@ -61,6 +61,13 @@ export default {
         labelOptional: '(optional)',
         byAppointmentOnly: 'By appointment only',
 
+        // Copy targets modal
+        copyHoursFrom: (source: string) => `Copy hours from ${source}`,
+        copyTargetsHint: 'Choose where to copy them. Anything already there is replaced.',
+        copyTargetsOccupied: 'has hours, will be replaced',
+        copyTargetsEmpty: 'There is nowhere else to copy these hours to.',
+        copyHoursAction: 'Copy hours',
+
         // Timeline accessible names
         byAppointmentOnlyShort: 'by appointment only',
         addPresetHours: (hours: string) => `Add ${hours}`,

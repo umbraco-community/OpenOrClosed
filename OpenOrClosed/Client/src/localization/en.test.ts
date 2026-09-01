@@ -58,6 +58,7 @@ describe('the en dictionary', () => {
         expect(en.openOrClosed.openHolidayAction('Christmas')).toContain('Christmas');
         expect(en.openOrClosed.defaultHoursHint('09:00 – 17:00')).toContain('09:00 – 17:00');
         expect(en.openOrClosed.addPresetHours('09:00 – 12:00')).toContain('09:00 – 12:00');
+        expect(en.openOrClosed.copyHoursFrom('Monday')).toContain('Monday');
     });
 
     it('falls back to a generic name when a holiday has none yet', () => {
