@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    availablePreset,
     boundsFor,
     createRange,
     DAY_MINUTES,
@@ -357,6 +358,65 @@ describe('sanitizePreset', () => {
             range('09:00', '12:00'),
             range('13:00', '17:00'),
         ]);
+    });
+});
+
+describe('availablePreset', () => {
+    const preset = [range('09:00', '12:00'), range('13:00', '17:00'), range('18:00', '20:00')];
+
+    it('offers everything on an empty track', () => {
+        expect(availablePreset([], preset)).toEqual(preset);
+    });
+
+    it('offers nothing when there is no preset', () => {
+        expect(availablePreset([range('09:00', '17:00')], [])).toEqual([]);
+    });
+
+    it('withholds a block matching an existing range exactly', () => {
+        expect(availablePreset([range('13:00', '17:00')], preset)).toEqual([
+            range('09:00', '12:00'),
+            range('18:00', '20:00'),
+        ]);
+    });
+
+    it('withholds a block overlapping an existing range at its start', () => {
+        expect(availablePreset([range('08:00', '10:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block overlapping an existing range at its end', () => {
+        expect(availablePreset([range('11:00', '14:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block that contains an existing range', () => {
+        expect(availablePreset([range('10:00', '11:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block that sits inside an existing range', () => {
+        expect(availablePreset([range('08:00', '18:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('offers a block ending exactly where an existing range starts', () => {
+        // Touching is not overlapping - the same rule validateRange applies.
+        expect(availablePreset([range('12:00', '15:00')], [range('09:00', '12:00')])).toEqual([
+            range('09:00', '12:00'),
+        ]);
+    });
+
+    it('offers a block starting exactly where an existing range ends', () => {
+        expect(availablePreset([range('06:00', '09:00')], [range('09:00', '12:00')])).toEqual([
+            range('09:00', '12:00'),
+        ]);
+    });
+
+    it('keeps preset order when the middle block clashes', () => {
+        expect(availablePreset([range('13:30', '14:30')], preset)).toEqual([
+            range('09:00', '12:00'),
+            range('18:00', '20:00'),
+        ]);
+    });
+
+    it('offers nothing against a full day', () => {
+        expect(availablePreset([range('00:00', '24:00')], preset)).toEqual([]);
     });
 });
 

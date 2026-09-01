@@ -282,3 +282,24 @@ export function sanitizePreset(raw: unknown, allowAppointmentOnly: boolean): Hou
 
     return kept;
 }
+
+/**
+ * The preset blocks that fit: those overlapping nothing already on the track.
+ *
+ * The overlap test is the one `validateRange` uses, so touching ranges are kept - a preset block
+ * ending exactly where an existing one starts is still offered, consistent with every other rule in
+ * this module.
+ *
+ * This is the whole of the clash rule, and what makes the palette safe to click at: nothing on offer
+ * can displace anything already present.
+ */
+export function availablePreset(ranges: HoursRange[], preset: HoursRange[]): HoursRange[] {
+    return preset.filter((candidate) => {
+        const start = parseTime(candidate.start);
+        const end = parseTime(candidate.end);
+
+        return !ranges.some(
+            (existing) => start < parseTime(existing.end) && end > parseTime(existing.start),
+        );
+    });
+}
