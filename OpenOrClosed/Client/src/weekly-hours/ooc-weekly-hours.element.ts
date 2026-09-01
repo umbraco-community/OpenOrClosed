@@ -15,7 +15,8 @@ import {
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-time-axis.element.js';
 import '../timeline/ooc-timeline.element.js';
-import { type WeeklyHoursDay } from './week.js';
+import { copyRangesTo, type WeeklyHoursDay } from './week.js';
+import { OOC_COPY_TARGETS_MODAL } from '../copy-targets/copy-targets.token.js';
 
 // Re-exported so the clipboard manifest and anything else that reached for it here still can.
 export type { WeeklyHoursDay } from './week.js';
@@ -111,13 +112,59 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         this.dispatchEvent(new UmbChangeEvent());
     }
 
+    /** Saturday and Sunday, as System.DayOfWeek numbers. */
+    private static readonly WEEKEND = [6, 0];
+
+    private async _copyDay(day: number) {
+        const others = WEEK.filter((entry) => entry !== day);
+
+        const groups = [
+            {
+                label: this.localize.term('openOrClosed_groupWeekdays'),
+                ids: others.filter((entry) => !OocWeeklyHoursElement.WEEKEND.includes(entry)),
+            },
+            {
+                label: this.localize.term('openOrClosed_groupWeekend'),
+                ids: others.filter((entry) => OocWeeklyHoursElement.WEEKEND.includes(entry)),
+            },
+            { label: this.localize.term('general_all'), ids: others },
+        ]
+            // Drop a group offering nothing - Weekend, when the source is a weekend day and only one
+            // other remains, still offers one; Weekend with no members cannot happen, but a future
+            // group could.
+            .filter((group) => group.ids.length > 0)
+            .map((group) => ({ label: group.label, ids: group.ids.map(String) }));
+
+        try {
+            const result = await umbOpenModal(this, OOC_COPY_TARGETS_MODAL, {
+                data: {
+                    sourceLabel: dayName(day),
+                    targets: others.map((entry) => ({
+                        id: String(entry),
+                        label: dayName(entry),
+                        occupied: this._rangesFor(entry).length > 0,
+                    })),
+                    groups,
+                },
+            });
+
+            const days = result.ids.map(Number).filter(Number.isInteger);
+            if (days.length === 0) return;
+
+            this.value = copyRangesTo(this.value ?? [], day, days);
+            this.dispatchEvent(new UmbChangeEvent());
+        } catch {
+            // Dismissed - nothing copied.
+        }
+    }
+
     static styles = css`
         :host {
             display: block;
         }
         .row {
             display: grid;
-            grid-template-columns: 90px 1fr;
+            grid-template-columns: 90px 24px 1fr;
             align-items: center;
             gap: var(--uui-size-space-3);
             margin-bottom: var(--uui-size-space-2);
@@ -127,8 +174,33 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         }
     `;
 
+    private _renderDayMenu(day: number) {
+        // Both actions need hours to act on, so an empty day offers a menu that does nothing - which
+        // is better than no menu at all, because the row stays the same shape.
+        const hasHours = this._rangesFor(day).length > 0;
+
+        return html`
+            <umb-dropdown
+                compact
+                hide-expand
+                look="secondary"
+                label=${this.localize.term('openOrClosed_dayActions', dayName(day))}>
+                <uui-symbol-more slot="label"></uui-symbol-more>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_copyHoursTo')}
+                    ?disabled=${!hasHours}
+                    @click-label=${() => this._copyDay(day)}></uui-menu-item>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_clearHours')}
+                    ?disabled=${!hasHours}
+                    @click-label=${() => this._setRanges(day, [])}></uui-menu-item>
+            </umb-dropdown>
+        `;
+    }
+
     private _renderAxis() {
         return html`<div class="row">
+            <div></div>
             <div></div>
             <ooc-time-axis .use24Hour=${this._use24Hour}></ooc-time-axis>
         </div>`;
@@ -144,6 +216,7 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
                 (day) => html`
                     <div class="row">
                         <div class="day">${dayName(day)}</div>
+                        ${this._renderDayMenu(day)}
                         <ooc-timeline
                             .ranges=${this._rangesFor(day)}
                             .preset=${preset}

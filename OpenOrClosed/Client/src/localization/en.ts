@@ -3,7 +3,7 @@
  *
  * Built-in Umbraco keys are used instead of duplicating them here: general_name,
  * general_cancel, general_remove, general_label, general_yes, general_no,
- * general_default, and buttons_save (there is no general_save).
+ * general_default, general_all, general_actions, and buttons_save (there is no general_save).
  */
 export default {
     openOrClosed: {
@@ -67,6 +67,11 @@ export default {
         copyTargetsOccupied: 'has hours, will be replaced',
         copyTargetsEmpty: 'There is nowhere else to copy these hours to.',
         copyHoursAction: 'Copy hours',
+        copyHoursTo: 'Copy hours to…',
+        clearHours: 'Clear hours',
+        dayActions: (day: string) => `Actions for ${day}`,
+        groupWeekdays: 'Weekdays',
+        groupWeekend: 'Weekend',
 
         // Timeline accessible names
         byAppointmentOnlyShort: 'by appointment only',
