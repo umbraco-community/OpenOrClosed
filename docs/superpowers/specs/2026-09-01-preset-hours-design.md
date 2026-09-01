@@ -1,4 +1,12 @@
-# Preset hours applied by clicking a track — design
+# Preset hours as a palette — design
+
+> **Amended 1 September 2026, mid-implementation.** The first version of this spec described preset
+> hours as a *stamp*: ghosts on an empty track only, one click laying down the whole set. That
+> shipped to the `feature/preset-hours` branch and was never released. It is replaced here by a
+> *palette*: the preset offers itself as individually selectable sets, and you take the ones you
+> want. The superseded decisions and the reasoning that produced them are recorded under
+> *Superseded by the palette model*, so the change of direction does not have to be re-argued. Git
+> history holds the earlier text.
 
 ## Context
 
@@ -6,8 +14,8 @@ Setting a week of hours means the same gesture seven times: click a track, drag 
 shape, click it, type the exact times. For a site whose days are mostly identical — 09:00–12:00 and
 13:00–17:00, Monday to Friday — that is six repetitions of a decision already made once.
 
-The request is to move that decision into the data type: configure the blocks once, then apply them
-to a day or a holiday in a single click.
+The request is to move that decision into the data type: configure the blocks once, then take them
+onto a day or a holiday without redrawing them.
 
 The pieces are already in place. [`ooc-timeline`](../../../OpenOrClosed/Client/src/timeline/ooc-timeline.element.ts)
 is deliberately day-agnostic — "knows nothing about days or holidays" — and three consumers already
@@ -16,32 +24,41 @@ mount it: the seven rows of Weekly Hours, the Holidays **Default holiday hours**
 one property to that one element.
 
 **This change touches no C#.** `DataTypeConfig` reads toggles only, and nothing on the read path
-needs to know a preset existed — applying one writes ordinary ranges into the property value.
+needs to know a preset existed — taking one writes ordinary ranges into the property value.
 
-### What the gesture displaces
+### The shape of the interaction
 
-Clicking bare track is not currently inert. `_onTrackPointerDown` creates a single range at the
-click point, running for `defaultClose − defaultOpen`. That behaviour is load-bearing for ad-hoc
-hours, so the design keeps it rather than replacing it, and splits the two by whether the day has
-anything on it (see *Settled decisions*).
+Hovering a track, or moving keyboard focus into it, reveals the preset blocks that would fit —
+drawn faintly, in place, as the blocks they would become. Each one is a control: click it, or focus
+it and press Enter, and that set alone lands. The others stay on offer. Clicking anywhere the
+preset is not offering something creates an ad-hoc set, exactly as it did before this feature
+existed.
+
+Blocks that clash with hours already on the track are simply not offered, so what you see is always
+what you can take.
 
 ## Scope
 
 **In scope**
 
 - A **Preset Hours** data type setting on Weekly Hours and Holidays, edited on a single 24-hour
-  timeline through a new config-only property editor UI.
-- Clicking (or pressing Enter on) an **empty** track applies every preset block at once.
-- A ghost preview of the preset on empty tracks, so the gesture is visible.
-- All three existing `ooc-timeline` consumers pick this up.
+  timeline through a config-only property editor UI.
+- Ghosts of the *available* preset blocks, revealed on hover or focus-within, each individually
+  selectable by pointer or keyboard.
+- Clash filtering against the hours already on the track.
+- All three existing `ooc-timeline` consumers pick this up with **no change to any of them**.
 - Extraction of the time axis into its own element, so the config editor and the weekly editor share
   one copy of the tick maths.
 - Unit tests for the new pure logic, dictionary coverage, README, and a manual backoffice checklist.
 
 **Out of scope**
 
-- **An "apply to all days" button.** A separate gesture with its own overwrite question; not asked
-  for, and seven clicks is already the improvement being sought.
+- **Applying the whole preset in one gesture.** Dropped deliberately; see *Superseded*.
+- **Truncating a clashing block to fit.** A preset 09:00–17:00 against an existing 12:00–13:00 could
+  be offered as 09:00–12:00 plus 13:00–17:00. It is instead not offered at all. Deferred rather than
+  rejected — the rule "what you see is what you get" is worth more than the extra reach while the
+  interaction is new.
+- **An "apply to all days" control.** Not asked for.
 - **A `Template` hours mode on holidays** — storing "whatever the preset says" as a mode rather than
   copied blocks. Considered and rejected: it turns a backoffice convenience into a read-path
   contract, and the C# converters, Delivery API output and models would all have to resolve data
@@ -49,24 +66,39 @@ anything on it (see *Settled decisions*).
 - **Standard and Special Business Hours.** Neither uses `ooc-timeline`; they have their own
   `defaultOpen`/`defaultClose` mechanism and are the legacy pair.
 - **Any C# change.** None is needed.
-- **Making the config editor honour `time_24hr`.** See *The two constraints*.
+- **Making the config editor honour `time_24hr`.** See *The constraints*.
 
 ## Settled decisions
 
 | Decision | Choice | Why |
 |---|---|---|
-| The gesture | Click (or Enter on) bare track | Chosen over a clickable day name and a per-row apply button. No new chrome, and it reads as direct manipulation like the rest of the editor. |
-| Collision with add-one-block | Preset applies **only when the track is empty**; a click in a gap on a track that already has blocks creates one block exactly as today | Both gestures survive, each in the case where it is the obvious one, and applying a preset can never destroy hand-tuned hours. |
-| Reach into Holidays | Empty tracks only — the **Default holiday hours** track and a holiday's **Custom** track | Falls out of the `ooc-timeline` change for free. The holiday table row keeps opening the modal, which is the behaviour it must keep. |
-| Affordance | Always-on ghost preview of the preset blocks on an empty track | The chosen gesture is otherwise invisible. Hover-only was rejected as unreachable for keyboard and touch; tooltip-only as undiscoverable. |
+| The model | A **palette**: each available preset block is its own control | Taking two of three sets is a normal thing to want, and a stamp cannot express it. |
+| Revealing the ghosts | On hover, or focus within the track | Chosen over always-on. A track that permanently displays dashed outlines it is not currently offering to act on reads as clutter, especially on the seven-row weekly editor. |
+| Ghost semantics | Real `<button>` elements — focusable, labelled, in the tab order | They are controls now. `aria-hidden` decoration with `pointer-events: none` is exactly what they must stop being. |
+| Keyboard reach | Ghosts are tab stops, but only while focus is inside their track | Native semantics, no bespoke arrow-key mode competing with the arrow keys that already move and resize real blocks. |
+| Touch | `@media (hover: none)` keeps ghosts permanently visible | A touch device has no hover to reveal them with, and a reveal-then-pick double tap would be worse than showing them. |
+| Clicking bare track | **Always** creates one ad-hoc set, as it did before this feature | With ghosts offering the preset, the track has no second job to do. This is the pre-feature behaviour restored, not a new rule. |
+| Enter on the track | Creates one ad-hoc set in the largest gap, as it did before this feature | Ghosts carry their own Enter now, so the track's does not need to be overloaded. |
+| Clash rule | A preset block overlapping anything already on the track is not offered; touching is not clashing | "What you see is what you can take." Consistent with the rest of `time-range.ts`, where touching has never counted as an overlap. |
 | Setting name | **Preset Hours**, alias `presetHours`, default `[]` | "Preset" rather than "Default", because Holidays already has *Default holiday hours* as part of its **value**. The description draws that line explicitly. |
-| Backwards compatibility | An empty preset falls straight through to today's behaviour | Every existing data type defaults to `[]`, so nothing changes until someone configures a preset. |
-| Preset editor location | New `src/preset-hours/`, registered like `OpenOrClosed.PropertyEditorUi.TimeInput` — a config-only UI with no `propertyEditorSchemaAlias` | Same shape as the existing config editor in this package. |
-| By-appointment blocks | The preset editor always offers the flag; **the consumer strips it as it reads the setting** when its own `showAppointmentOnly` is off | Never write a flag into a property value that the content editor cannot see or clear. Stripping on read rather than on apply also keeps the ghost preview honest about what a click will produce. |
+| Backwards compatibility | An empty preset leaves every gesture exactly as it was before the feature | Every existing data type defaults to `[]`, so nothing changes until someone configures a preset. |
+| Preset editor location | `src/preset-hours/`, registered like `OpenOrClosed.PropertyEditorUi.TimeInput` — a config-only UI with no `propertyEditorSchemaAlias` | Same shape as the existing config editor in this package. |
+| By-appointment blocks | The preset editor always offers the flag; **the consumer strips it as it reads the setting** when its own `showAppointmentOnly` is off | Never write a flag into a property value that the content editor cannot see or clear. Stripping on read also keeps the ghosts honest about what they will produce. |
 | Overlapping presets | Dropped when the preset is read | The drag maths assumes sorted, non-overlapping input. See below. |
-| Where the logic lives | `sanitizePreset` in the DOM-free `time-range.ts` | The elements cannot be unit-tested in this setup (no DOM in the node test run), so the decision has to be testable without one. |
+| Where the logic lives | `sanitizePreset` and `availablePreset` in the DOM-free `time-range.ts` | The elements cannot be unit-tested in this setup (no DOM in the node test run), so both decisions have to be testable without one. |
 
-## The two constraints that shape it
+### Superseded by the palette model
+
+Recorded so the reasoning is not lost, and so the change is not accidentally reverted later.
+
+| Superseded decision | Why it went |
+|---|---|
+| **Ghosts only on an empty track.** The rule was: empty track click applies the whole preset, a track with hours keeps adding one ad-hoc block, so both gestures survive and applying can never destroy hand-tuned hours. | The palette makes the protection structural rather than conditional — a clashing block is never offered, so there is nothing to destroy. The empty/non-empty distinction stops earning its place. |
+| **One click applies every block.** Answered the original request literally: "all pre-configured blocks of hours should be applied at once." | Superseded on request. It cannot coexist with per-ghost clicks without overloading bare-track clicks, and a palette that also stamps is two mental models for one surface. A three-block preset now costs three clicks; that was accepted explicitly. |
+| **Always-on ghosts, chosen over hover-reveal for keyboard and touch reach.** | The reasoning was right and the conclusion is preserved by other means: focus-within reveals for the keyboard, `@media (hover: none)` for touch. Hover is now only one of three ways in, not the only one. |
+| **The track's accessible name naming the whole preset**, and a `presetHoursApplied` announcement for the set. | Each ghost carries its own name now, and `_commit(ranges, index)` already announces a single range — so both the composed track name and the set-level announcement disappear. |
+
+## The constraints
 
 ### A settings property editor UI cannot see its sibling settings' values
 
@@ -91,8 +123,31 @@ neighbour clamps meaningless.
 `sanitizeRanges` sorts and drops malformed entries but **tolerates overlaps** — a pre-existing
 looseness that has not mattered, because every value it has seen was written by the editor, which
 cannot produce an overlap. A preset can be written by hand through uSync or a data type import, so
-`sanitizePreset` has to close that gap: it drops any block that starts before the previous one ends,
+`sanitizePreset` closes that gap: it drops any block that starts before the previous one ends,
 keeping the earlier block.
+
+`availablePreset` then guarantees the same property holds after a ghost is taken, because a block
+that would overlap is never offered.
+
+### A focusable control must not be invisible
+
+This is the constraint that shapes the reveal, and the one part of the design that is not obvious.
+
+Ghosts must be in the DOM to be tab stops. But a control that is focusable while invisible is an
+accessibility defect in its own right — focus lands somewhere the user cannot see. `opacity: 0`
+would do exactly that.
+
+`visibility: hidden` is the resolution: it hides the ghost **and** removes it from the tab order,
+and both reverse together. The reveal then works out of the order things are already in:
+
+1. The track itself is `tabindex="0"`, and the ghosts are its children.
+2. Tab reaches the **track** first. `:focus-within` fires on the host.
+3. The ghosts become `visible`, and therefore focusable.
+4. The next Tab lands on the first ghost. Focus is still inside the track, so they stay revealed.
+5. Tabbing past the last ghost leaves the track; the ghosts hide and take their tab stops with them.
+
+`:host(:hover)` drives the same reveal for the pointer, and `@media (hover: none)` pins them visible
+where there is no hover to give.
 
 ## Architecture
 
@@ -102,160 +157,143 @@ keeping the earlier block.
 sanitizePreset(raw: unknown, allowAppointmentOnly: boolean): HoursRange[]
 ```
 
-`sanitizeRanges(raw)` first, for the coercion and sort it already does, then drop overlaps
-left-to-right, then clear `byAppointmentOnly` unless `allowAppointmentOnly`. Pure, DOM-free,
-allocation-cheap, and the only new logic in the feature that can be got wrong quietly.
+`sanitizeRanges(raw)` first, for the coercion and the sort it already does, then drop overlaps
+left-to-right, then clear `byAppointmentOnly` unless `allowAppointmentOnly`. Pure and DOM-free.
+**Already implemented and tested** — unchanged by this amendment.
 
-### `ooc-timeline` — one new property, one new rule
+### `availablePreset` — `src/timeline/time-range.ts`
 
-```ts
-/** Blocks a click on an empty track lays down at once. Consumers sanitise, as they do for `ranges`. */
-@property({ type: Array })
-preset: HoursRange[] = [];
+```
+availablePreset(ranges: HoursRange[], preset: HoursRange[]): HoursRange[]
 ```
 
-Trusting the caller matches how `ranges` already works: `ooc-weekly-hours._rangesFor` sanitises, and
-the element stays dumb.
+The preset blocks that overlap nothing already on the track, in preset order. The overlap test is
+the one `validateRange` already uses — `start < other.end && end > other.start` — so touching ranges
+are kept, consistent with every other rule in the module.
 
-- **`_onTrackPointerDown`** — when `ranges` is empty and `preset` is not, commit the preset;
-  otherwise `createRange` unchanged.
-- **`_onTrackKeydown`** (Enter) — the same test ahead of the existing `largestGap` path, then focus
-  the first block.
-- **Announcement** — applying sets `_announcement` from the new `presetHoursApplied` entry, so the
-  existing `aria-live` region reports the whole set rather than one range.
-- **Accessible name** — an empty track carrying a preset composes `trackLabel` with the
-  `applyPresetHours` entry: *"Monday, apply preset hours: 09:00–12:00, 13:00–17:00"*.
-- **Ghost preview** — rendered only while `ranges` is empty and `preset` is not: one `<i class="ghost">`
-  per block, positioned by the existing `_percent`, `aria-hidden="true"` and `pointer-events: none`.
-  That last property is the whole guard — `_onTrackPointerDown` bails unless
-  `event.target === event.currentTarget`, so a ghost that accepted pointer events would swallow the
-  very click it advertises.
+Pure, and the whole of the clash rule. It is what makes the interaction safe: nothing offered can
+destroy anything present.
 
-### `ooc-time-axis` — extracted, not written
+### `ooc-timeline` — ghosts become controls
 
-`ooc-weekly-hours._renderAxis` holds the tick positions, the `first`/`last` transform classes and the
-`formatAxis` calls. The preset editor wants the same axis over the same 24 hours, so this moves to
-`src/timeline/ooc-time-axis.element.ts` with a `use24Hour` property, and both mount it. Behaviour is
-unchanged; the weekly editor keeps its 90px label gutter by laying the axis out in the same grid row
-it uses now.
+The `preset` property stays as it is: consumers sanitise before passing, exactly as they already do
+for `ranges`, which keeps this element free of the configuration it would otherwise have to read.
 
-This is the only refactor in the change.
+- **`_availableGhosts`** — `availablePreset(this.ranges, this.preset)`, computed per render.
+- **`_renderGhosts`** — one `<button class="ghost">` per available block, positioned by the existing
+  `_percent`, showing the times with the same `narrow` rule real blocks use, so a ghost reads as a
+  preview of the block it becomes. Labelled from the new `addPresetHours` entry composed with the
+  existing `_accessibleName`, giving *"Add 09:00 – 12:00, Lunch"*.
+- **`_takeGhost(range)`** — inserts that block into `ranges`, sorted, and commits with the new
+  block's index so the existing `_commit` announcement covers it. Then moves focus to the real block
+  it became, found by start time the way the existing Enter path already does.
+- **`_onTrackPointerDown`** and **`_onTrackKeydown`** revert to their pre-feature bodies. The
+  `event.target === event.currentTarget` guard already on the track is what stops a click on a ghost
+  also creating an ad-hoc set — the same mechanism real blocks have always relied on, which is why
+  `pointer-events: none` can be deleted rather than replaced.
+- **Removed:** `_presetApplies`, `_applyPreset`, `_presetSummary`, `_trackName`. The track's
+  `aria-label` goes back to plain `trackLabel`.
 
-### `ooc-preset-hours` — the config editor
+The element comes out **smaller** than the stamp version it replaces.
 
-`value: HoursRange[]`, an `ooc-time-axis` above one `ooc-timeline`, `edit-range` wired to the
-existing `OOC_RANGE_MODAL`, and `UmbChangeEvent` on change. `use24Hour` fixed true,
-`showAppointmentOnly` true, `defaultDurationMinutes` left at the element's own 8-hour default —
-`defaultOpen`/`defaultClose` are sibling settings it cannot read, and an admin dragging a block into
-place does not need them.
+### `ooc-time-axis`, `ooc-preset-hours`, and the consumers
 
-It is the weekly editor's single row with the day column removed, and needs no new logic of its own.
+Unchanged by this amendment, and all already implemented:
 
-### Feeding the preset in
-
-| Consumer | Source |
-|---|---|
-| `ooc-weekly-hours` | `sanitizePreset(this._setting('presetHours'), this._showAppointmentOnly)`, computed once in `render()` and passed to all seven tracks |
-| `ooc-holidays` | the same value onto the **Default holiday hours** track, and into `OocHolidayModalData` |
-| `ooc-holiday-modal` | `this.data?.presetHours` onto the **Custom** track |
-
-The modal takes it as data rather than reading config, because it has no `UmbPropertyEditorConfigCollection` —
-the same reason `use24Hour` and `showAppointmentOnly` are already passed in.
+- `ooc-time-axis` — the 00:00–24:00 tick scale, extracted from `ooc-weekly-hours` so the config
+  editor and the weekly editor share one copy.
+- `ooc-preset-hours` — the config editor: an axis over one timeline, `edit-range` wired to
+  `OOC_RANGE_MODAL`. It passes no `preset` to its own timeline, because a preset editor ghosting
+  itself would be circular.
+- `ooc-weekly-hours`, `ooc-holidays` and `ooc-holiday-modal` already pass `.preset` and need **no
+  change**. That the interaction model can be replaced without touching a single consumer is the
+  payoff for having put the gesture in the shared element.
 
 ### Files
 
 | File | Change |
 |---|---|
-| `src/timeline/time-range.ts` | + `sanitizePreset` |
-| `src/timeline/time-range.test.ts` | + `sanitizePreset` cases |
-| `src/timeline/ooc-timeline.element.ts` | + `preset`, the empty-track rule, ghost preview, accessible name, announcement |
-| `src/timeline/ooc-time-axis.element.ts` | **new** — extracted from `ooc-weekly-hours` |
-| `src/preset-hours/ooc-preset-hours.element.ts` | **new** — the config editor |
-| `src/preset-hours/manifest.ts` | **new** — `OpenOrClosed.PropertyEditorUi.PresetHours` |
-| `src/bundle.manifests.ts` | register `preset-hours` before `clipboard` |
-| `src/weekly-hours/manifest.ts` | + `presetHours` setting and its `defaultData` entry |
-| `src/weekly-hours/ooc-weekly-hours.element.ts` | mount `ooc-time-axis`, feed `.preset` |
-| `src/holidays/manifest.ts` | + `presetHours` setting and its `defaultData` entry |
-| `src/holidays/ooc-holidays.element.ts` | feed `.preset`, pass `presetHours` into the modal |
-| `src/holidays/holiday-modal.token.ts` | + `presetHours` on the data type |
-| `src/holidays/ooc-holiday-modal.element.ts` | feed `.preset` to the Custom track |
-| `src/localization/en.ts` | + 5 entries |
-| `src/localization/en.test.ts` | `settings.length` 7 → 9; cover the new argument-taking entries |
-| `README.md` | Weekly Hours and Holidays sections, settings note, version history |
-| `docs/superpowers/plans/2026-09-01-preset-hours-checklist.md` | **new** — manual backoffice checklist |
+| `src/timeline/time-range.ts` | + `availablePreset` (`sanitizePreset` already landed) |
+| `src/timeline/time-range.test.ts` | + `availablePreset` cases |
+| `src/timeline/ooc-timeline.element.ts` | ghosts become buttons; clash filtering; the visibility reveal; track handlers reverted; `_presetApplies`, `_applyPreset`, `_presetSummary` and `_trackName` removed |
+| `src/localization/en.ts` | `applyPresetHours` → `addPresetHours`; `presetHoursApplied` removed; `settingPresetHoursDescription` reworded away from "applied in one click to an empty timeline", which describes the stamp |
+| `src/localization/en.test.ts` | the argument-taking entries case follows that swap |
+| `src/timeline/ooc-time-axis.element.ts` | — already landed, unchanged |
+| `src/preset-hours/*`, `src/bundle.manifests.ts` | — already landed, unchanged |
+| `src/weekly-hours/*`, `src/holidays/*` | — already landed, **unchanged by this amendment** |
+| `README.md` | the two feature paragraphs and the single 17.4.0 entry describe the palette |
+| `docs/superpowers/plans/2026-09-01-preset-hours-checklist.md` | items covering the gesture rewritten |
 
 ### Dictionary entries
 
 | Key | English |
 |---|---|
 | `settingPresetHours` | Preset Hours |
-| `settingPresetHoursDescription` | Blocks of hours applied in one click to an empty timeline. On Holidays this is a starting pattern held in the data type — not the *Default holiday hours* this node falls back to. Leave it empty to add hours one block at a time. |
+| `settingPresetHoursDescription` | Blocks of hours you can add to a day in one click. On Holidays this is a pattern held in the data type — not the *Default holiday hours* this node falls back to. Leave it empty to add hours one block at a time. |
 | `presetHoursLabel` | Preset Hours |
-| `applyPresetHours(hours)` | Apply preset hours: `{hours}` |
-| `presetHoursApplied(hours)` | Preset hours applied: `{hours}` |
+| `addPresetHours(hours)` | Add `{hours}` |
 
-`en.test.ts` asserts `settings.length` against a literal, so adding one setting to each of the two
-editor manifests moves that fixture to 9. Its *"phrases the two argument-taking entries"* case grows
-to cover `applyPresetHours` and `presetHoursApplied` — and its name stops undercounting, since it
-already checked three.
+`presetHoursApplied` is removed: `_commit(ranges, index)` already announces the range it added.
+
+`en.test.ts` asserts `settings.length` against a literal, which the two manifest settings already
+moved to 9. Its argument-taking-entries case swaps `applyPresetHours` for `addPresetHours` and drops
+`presetHoursApplied`.
 
 ## Testing
 
-**Unit — `sanitizePreset`**
+**Unit — `availablePreset`**
 
 | Case | Expectation |
 |---|---|
-| `undefined`, `null`, `{}`, `'09:00'` | `[]` |
-| Two blocks, later one first | Sorted by start |
-| `09:00–13:00` and `12:00–17:00` | Second dropped, first kept |
-| Three blocks where the middle overlaps the first | Middle dropped, third kept — a drop must not shift the comparison point onto the dropped block |
-| Adjacent blocks, `12:00` end and `12:00` start | Both kept; touching is not overlapping |
-| `byAppointmentOnly: true` with `allowAppointmentOnly: false` | Flag cleared, block kept |
-| `byAppointmentOnly: true` with `allowAppointmentOnly: true` | Flag preserved |
-| A malformed entry between two valid ones | Dropped, the valid pair kept |
+| Empty track, three-block preset | All three offered |
+| Empty preset, any track | `[]` |
+| Preset block exactly matching an existing range | Not offered |
+| Preset block overlapping an existing range at its start only | Not offered |
+| Preset block overlapping at its end only | Not offered |
+| Preset block strictly containing an existing range | Not offered |
+| Preset block strictly inside an existing range | Not offered |
+| Preset block ending exactly where an existing range starts | Offered — touching is not clashing |
+| Preset block starting exactly where an existing range ends | Offered |
+| Three-block preset, middle one clashing | First and third offered, in preset order |
+| Full day of existing hours | `[]` |
 
-**Unit — dictionary.** `en.test.ts` already fails on a manifest key the dictionary lacks; the
-fixture bump and the two argument-taking entries extend that cover to this change.
+**Unit — `sanitizePreset`** — already implemented and passing; unchanged.
 
-**Not unit tested.** The element behaviour — the empty-track rule, the ghost preview, the accessible
-name. There is no DOM in this package's test run, and `ooc-timeline` imports the backoffice runtime.
-That is why the decision is a pure function and the element change is a two-branch `if` around it;
-the rest is covered by the manual checklist.
+**Unit — dictionary.** `en.test.ts` already fails on a manifest key the dictionary lacks, and covers
+each argument-taking entry phrases its argument.
 
-**Manual checklist** covers: preset configured then a click on an empty weekday; a click in a gap on
-a non-empty weekday still adding one block; the ghost appearing and disappearing; Enter doing the
-same as a click; keyboard focus landing on the first applied block; the Holidays default track and a
-holiday's Custom track; `showAppointmentOnly` off stripping the flag; an unconfigured data type
-behaving exactly as it does today; and the range modal opening from the data type settings panel.
+**Not unit tested.** Every element behaviour: the reveal, the tab order, the ghost buttons, the
+focus move after taking one. There is no DOM in this package's test run and `ooc-timeline` imports
+the backoffice runtime. That is why both decisions are pure functions and the element holds only
+rendering and event wiring. The manual checklist carries the rest, and after this amendment it must
+cover the tab-order sequence specifically — the visibility mechanism is the part most likely to be
+subtly wrong.
 
 ## Delivery order
 
-Each step builds and tests green on its own.
+Tasks 1–6 of the original plan are committed on `feature/preset-hours`. This amendment is three
+further steps, each building and testing green on its own.
 
-1. `sanitizePreset` and its tests. Pure, no UI, nothing consumes it yet.
-2. Extract `ooc-time-axis`, switch `ooc-weekly-hours` over. No behaviour change — a pure refactor
-   landed before anything depends on it.
-3. `preset` on `ooc-timeline`: the rule, the ghost, the accessible name, the announcement. Inert
-   until something passes a preset.
-4. `ooc-preset-hours` and its manifest, registered in the bundle. The setting can now be configured,
-   and nothing reads it yet.
-5. Wire the three consumers, add the two manifest settings, add the dictionary entries, update
-   `en.test.ts`.
-6. README and the manual checklist.
+1. `availablePreset` and its tests. Pure, nothing consumes it yet.
+2. Rework `ooc-timeline`: ghosts as buttons, clash filtering, the visibility reveal, the reverted
+   track handlers, the dictionary swap. No consumer changes.
+3. README, checklist and this spec brought into line.
 
 ## Risks
 
 | Risk | Handling |
 |---|---|
-| ~~**The range modal may not open from the data type settings panel.**~~ **Resolved during implementation — not a risk.** `UmbModalManagerContext` is instantiated once on the app host in the backoffice core entry point (`packages/core/entry-point.js`), not per workspace, so context resolution reaches it from anywhere in the tree. Core does exactly this from exactly this surface: `Umb.PropertyEditorUi.Collection.LayoutConfiguration` is a config-only property editor UI that calls `umbOpenModal(this, UMB_ICON_PICKER_MODAL, …)`. The inline-inputs fallback was not needed. |
-| **A ghost block swallowing the click it advertises.** | `pointer-events: none`, and the checklist tests a click that lands squarely on a ghost. |
+| ~~**The range modal may not open from the data type settings panel.**~~ **Resolved during implementation — not a risk.** `UmbModalManagerContext` is instantiated once on the app host in the backoffice core entry point (`packages/core/entry-point.js`), not per workspace, so context resolution reaches it from anywhere in the tree. Core does exactly this from exactly this surface: `Umb.PropertyEditorUi.Collection.LayoutConfiguration` is a config-only property editor UI that calls `umbOpenModal(this, UMB_ICON_PICKER_MODAL, …)`. | — |
+| **A focusable but invisible ghost.** The single most likely defect: `opacity: 0` instead of `visibility: hidden` leaves the ghosts in the tab order permanently, so a keyboard user tabs into something they cannot see. | `visibility: hidden`, never `opacity: 0`, for the hidden state. The checklist tests the tab sequence explicitly, including tabbing past the last ghost. |
+| **Tab-order weight.** A three-block preset adds three tab stops per track, and the weekly editor has seven tracks. | The stops exist only while focus is inside that track, so a keyboard user meets at most one track's worth at a time. |
+| **Discoverability.** Hover-reveal means an editor who never hovers a track never learns a preset exists — a real loss against the always-on ghosts this replaces. | Accepted as the cost of a quieter editor. Touch devices show them permanently; keyboard users meet them on the first Tab into a track. Noted in the README so the feature is at least documented. |
+| **A ghost mistaken for a real block.** They sit on the same track, at the same height. | Dashed border, reduced opacity, and an accessible name beginning "Add". |
 | **"Preset Hours" read as "Default holiday hours".** Two similar-sounding things on the same editor, one configuration and one value. | The setting description names the distinction, and so does the README. |
-| **An empty day with a preset no longer honours where you clicked.** Clicking at 14:00 on an empty day lays down the preset, not a block starting at 14:00. | Inherent to the chosen gesture, and only for data types that opt in by configuring a preset. The ghost preview shows what the click will do before it happens, and the second click onwards behaves as it always has. |
-| **A preset carrying labels.** `HoursRange.label` travels with a preset block, so applying copies the label onto every day. | Intended — a label like "Lunch" is exactly the kind of thing worth configuring once. Noted in the README so it is not a surprise. |
+| **A preset carrying labels.** `HoursRange.label` travels with a preset block, so a taken block arrives labelled. | Intended — a label like "Lunch" is exactly the kind of thing worth configuring once. Noted in the README so it is not a surprise. |
 
 ## Deferred
 
-- **Apply the preset to every day at once**, from a single control above the week.
-- **A `Template` hours mode on holidays**, resolved at read time instead of copied.
+- **Truncating a clashing block to fit** rather than withholding it.
+- **Take every remaining block at once**, from a control that appears with the ghosts.
 - **The preset editor honouring `time_24hr` and `showAppointmentOnly`** by reading its sibling
   settings through the data type workspace's property dataset context.
