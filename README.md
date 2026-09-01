@@ -36,11 +36,21 @@ its middle to move it; click one to set exact times, add an optional label, or m
 appointment only. Ranges snap to 15 minutes, never cross midnight, and cannot be dragged into
 overlapping. `24:00` is a valid end, meaning open until midnight.
 
+Set **Preset Hours** on the data type and an empty day draws them as a faint outline; clicking the
+day lays them all down at once. A day that already has hours keeps the original behaviour — clicking
+a gap adds a single block — so a preset can never overwrite hours you have tuned by hand. Labels and
+the by-appointment flag travel with a preset block, so "Lunch" only has to be typed once.
+
 ### Holidays
 
 Named date ranges that override the weekly schedule, with a shared **Default holiday hours**
 timeline at the top and a per-holiday override of `Default`, `Closed` or `Custom`. A holiday can
 repeat yearly, in which case it never expires.
+
+**Preset Hours** works here too, on the **Default holiday hours** track and on a holiday's
+**Custom** track. Mind the difference between the two names: *Preset Hours* is configuration, a
+pattern held on the data type, while *Default holiday hours* is content — the hours this node's
+holidays fall back to.
 
 ## Copying hours between nodes
 
@@ -166,6 +176,13 @@ A few behaviours worth knowing:
   delete them for real.
 
 ## Change Log
+
+### Version 17.4.0
+
+* Added **Preset Hours** to the Weekly Hours and Holidays data types: configure blocks of hours
+  once, then click an empty timeline to apply them all at once. Empty tracks show the preset as a
+  faint outline so the gesture is visible; a track that already has hours behaves exactly as before.
+  Leaving the setting empty changes nothing.
 
 ### Version 17.3.1
 
