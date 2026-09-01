@@ -15,11 +15,10 @@ import {
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-time-axis.element.js';
 import '../timeline/ooc-timeline.element.js';
+import { type WeeklyHoursDay } from './week.js';
 
-export interface WeeklyHoursDay {
-    day: number;
-    ranges: HoursRange[];
-}
+// Re-exported so the clipboard manifest and anything else that reached for it here still can.
+export type { WeeklyHoursDay } from './week.js';
 
 /**
  * Monday first. The stored `day` values follow System.DayOfWeek, where Sunday is 0.

@@ -2,7 +2,7 @@ import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import type { UmbClipboardPastePropertyValueTranslator } from '@umbraco-cms/backoffice/clipboard';
 import { unwrapEntryValue, type OocClipboardEntryValue } from '../../clipboard/entry-value.js';
 import { sanitizeRanges } from '../../timeline/time-range.js';
-import type { WeeklyHoursDay } from '../ooc-weekly-hours.element.js';
+import type { WeeklyHoursDay } from '../week.js';
 
 /**
  * Unlike the fixed-week editors, weekly hours stores a sparse day list, so a malformed entry cannot
