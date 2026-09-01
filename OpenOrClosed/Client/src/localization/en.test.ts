@@ -87,7 +87,7 @@ describe('manifest localisation references', () => {
     it('covers every editor and setting', () => {
         // Guards the fixtures below: an empty list would make every other case pass vacuously.
         expect(manifests.filter((manifest) => manifest.meta?.label).length).toBe(2);
-        expect(settings.length).toBe(7);
+        expect(settings.length).toBe(9);
     });
 
     it('marks setting labels with a bare #key', () => {

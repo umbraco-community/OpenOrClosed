@@ -6,7 +6,12 @@ import type {
     UmbPropertyEditorConfigCollection,
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
-import { parseTime, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
+import {
+    parseTime,
+    sanitizePreset,
+    sanitizeRanges,
+    type HoursRange,
+} from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-time-axis.element.js';
 import '../timeline/ooc-timeline.element.js';
@@ -66,6 +71,15 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         }
     }
 
+    /**
+     * The configured blocks, ready to apply. The appointment flag is dropped here, as the setting is
+     * read, rather than when a preset is applied - so the ghost preview shows exactly what a click
+     * will produce.
+     */
+    private get _presetHours(): HoursRange[] {
+        return sanitizePreset(this._setting('presetHours'), this._showAppointmentOnly);
+    }
+
     private _rangesFor(day: number): HoursRange[] {
         return sanitizeRanges(this.value?.find((entry) => entry.day === day)?.ranges);
     }
@@ -122,6 +136,9 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
     }
 
     render() {
+        // Hoisted: sanitising the setting once beats doing it seven times.
+        const preset = this._presetHours;
+
         return html`
             ${this._renderAxis()}
             ${WEEK.map(
@@ -130,6 +147,7 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
                         <div class="day">${dayName(day)}</div>
                         <ooc-timeline
                             .ranges=${this._rangesFor(day)}
+                            .preset=${preset}
                             .use24Hour=${this._use24Hour}
                             .showAppointmentOnly=${this._showAppointmentOnly}
                             .defaultDurationMinutes=${this._defaultDuration}

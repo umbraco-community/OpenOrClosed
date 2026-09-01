@@ -6,7 +6,12 @@ import type {
     UmbPropertyEditorConfigCollection,
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
-import { formatRange, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
+import {
+    formatRange,
+    sanitizePreset,
+    sanitizeRanges,
+    type HoursRange,
+} from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
 import { OOC_HOLIDAY_MODAL } from './holiday-modal.token.js';
@@ -43,6 +48,15 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
 
     private get _showAppointmentOnly(): boolean {
         return this._setting('showAppointmentOnly') === true;
+    }
+
+    /**
+     * The configured blocks, ready to apply. The appointment flag is dropped here, as the setting is
+     * read, rather than when a preset is applied - so the ghost preview shows exactly what a click
+     * will produce.
+     */
+    private get _presetHours(): HoursRange[] {
+        return sanitizePreset(this._setting('presetHours'), this._showAppointmentOnly);
     }
 
     private get _schedule(): HolidaySchedule {
@@ -95,6 +109,7 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
                 data: {
                     holiday,
                     defaultHours: schedule.defaultHours,
+                    presetHours: this._presetHours,
                     use24Hour: this._use24Hour,
                     showAppointmentOnly: this._showAppointmentOnly,
                 },
@@ -251,6 +266,7 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
                 </div>
                 <ooc-timeline
                     .ranges=${schedule.defaultHours}
+                    .preset=${this._presetHours}
                     .use24Hour=${this._use24Hour}
                     .showAppointmentOnly=${this._showAppointmentOnly}
                     .trackLabel=${this.localize.term('openOrClosed_defaultHolidayHours')}

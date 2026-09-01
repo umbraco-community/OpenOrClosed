@@ -26,6 +26,9 @@ export default {
         settingRemoveExpired: 'Remove Expired Holidays?',
         settingRemoveExpiredDescription:
             'Hide finished holidays from the converted value and the Delivery API. They stay visible in this editor so a mistyped date can still be corrected.',
+        settingPresetHours: 'Preset Hours',
+        settingPresetHoursDescription:
+            'Blocks of hours applied in one click to an empty timeline. On Holidays this is a pattern held in the data type — not the Default holiday hours this node falls back to. Leave it empty to add hours one block at a time.',
 
         // Holidays editor
         defaultHolidayHours: 'Default holiday hours',
