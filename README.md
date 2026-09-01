@@ -54,6 +54,20 @@ repeat yearly, in which case it never expires.
 pattern held on the data type, while *Default holiday hours* is content — the hours this node's
 holidays fall back to.
 
+## Copying hours within a property
+
+Every day on **Weekly Hours**, and every row on **Holidays**, has a `…` action menu.
+
+* **Copy hours to…** opens a list of the other days (or holidays) with **Weekdays**, **Weekend** and
+  **All** shortcuts. Tick the targets and the source's hours replace theirs — targets that already
+  have hours are marked as such before you commit.
+* **Clear hours** empties the day, or returns a holiday to `Default`.
+* **Duplicate**, on Holidays only, copies a whole holiday under a new name and opens it ready for its
+  dates to be changed.
+
+This is not the same thing as the property clipboard below. This copies **within one property on one
+node**; the clipboard copies **a whole property value between nodes**.
+
 ## Copying hours between nodes
 
 All four editors support Umbraco's property clipboard. Use the property's action menu to **Copy**
@@ -185,6 +199,9 @@ A few behaviours worth knowing:
   once, then hover a day — or tab into it — to be offered them as faint outlines, and click the ones
   you want. Blocks that clash with hours already on the day are not offered. Clicking bare timeline
   still adds a single ad-hoc set, and leaving the setting empty changes nothing.
+* Every weekday row and holiday row now has an action menu: **Copy hours to…** replicates a row's
+  hours onto any number of others, **Clear hours** empties it, and **Duplicate** copies a whole
+  holiday. See [Copying hours within a property](#copying-hours-within-a-property).
 
 ### Version 17.3.1
 
