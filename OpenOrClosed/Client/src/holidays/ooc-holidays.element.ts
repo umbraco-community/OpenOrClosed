@@ -15,7 +15,9 @@ import {
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
 import '../timeline/ooc-timeline.element.js';
 import { OOC_HOLIDAY_MODAL } from './holiday-modal.token.js';
+import { OOC_COPY_TARGETS_MODAL } from '../copy-targets/copy-targets.token.js';
 import {
+    duplicateHoliday,
     emptyHoliday,
     formatDateRange,
     isExpired,
@@ -130,6 +132,79 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
         }
     }
 
+    /** Appends a copy and opens it, because the date is the reason you duplicated it. */
+    private async _duplicateHoliday(index: number) {
+        const holidays = sortHolidays(this._schedule.holidays);
+        const source = holidays[index];
+        if (!source) return;
+
+        const copy = duplicateHoliday(
+            source,
+            holidays.map((entry) => entry.name),
+            this.localize.term('openOrClosed_copyWord'),
+        );
+
+        const appended = [...holidays, copy];
+        this._setHolidays(appended);
+
+        // Re-sorted, so the copy is not where it was appended.
+        void this._editHoliday(sortHolidays(appended).indexOf(copy));
+    }
+
+    /** Copies one holiday's whole hours setting - mode and blocks - onto others. */
+    private async _copyHolidayHours(index: number) {
+        const holidays = sortHolidays(this._schedule.holidays);
+        const source = holidays[index];
+        if (!source) return;
+
+        try {
+            const result = await umbOpenModal(this, OOC_COPY_TARGETS_MODAL, {
+                data: {
+                    sourceLabel: source.name || this.localize.term('openOrClosed_holiday'),
+                    targets: holidays
+                        .map((entry, position) => ({ entry, position }))
+                        .filter(({ position }) => position !== index)
+                        .map(({ entry, position }) => ({
+                            id: String(position),
+                            label: entry.name || this.localize.term('openOrClosed_holiday'),
+                            // Only custom blocks are work worth warning about losing.
+                            occupied:
+                                entry.hoursMode === 'custom' &&
+                                sanitizeRanges(entry.hours).length > 0,
+                        })),
+                },
+            });
+
+            const positions = new Set(result.ids.map(Number).filter(Number.isInteger));
+            if (positions.size === 0) return;
+
+            this._setHolidays(
+                holidays.map((entry, position) =>
+                    positions.has(position)
+                        ? {
+                              ...entry,
+                              hoursMode: source.hoursMode,
+                              hours: source.hours.map((range) => ({ ...range })),
+                          }
+                        : entry,
+                ),
+            );
+        } catch {
+            // Dismissed - nothing copied.
+        }
+    }
+
+    private _clearHolidayHours(index: number) {
+        const holidays = sortHolidays(this._schedule.holidays);
+        if (!holidays[index]) return;
+
+        this._setHolidays(
+            holidays.map((entry, position) =>
+                position === index ? { ...entry, hoursMode: 'default' as const, hours: [] } : entry,
+            ),
+        );
+    }
+
     private _removeExpired() {
         const today = todayIso();
         this._setHolidays(this._schedule.holidays.filter((holiday) => !isExpired(holiday, today)));
@@ -211,12 +286,48 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
             border: 1px solid var(--uui-color-border);
             border-radius: 1em;
         }
+        td.actions {
+            width: 1%;
+            text-align: right;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
         .empty {
             padding: var(--uui-size-space-4) 0;
             color: var(--uui-color-text-alt);
             font-size: var(--uui-type-small-size);
         }
     `;
+
+    private _renderHolidayMenu(holiday: Holiday, index: number) {
+        const hasOwnHours = holiday.hoursMode !== 'default' || holiday.hours.length > 0;
+
+        return html`
+            <umb-dropdown
+                compact
+                hide-expand
+                look="secondary"
+                label=${this.localize.term('openOrClosed_holidayActions', holiday.name)}>
+                <uui-symbol-more slot="label"></uui-symbol-more>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_duplicateHoliday')}
+                    @click-label=${() => this._duplicateHoliday(index)}></uui-menu-item>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_copyHoursTo')}
+                    @click-label=${() => this._copyHolidayHours(index)}></uui-menu-item>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_clearHours')}
+                    ?disabled=${!hasOwnHours}
+                    @click-label=${() => this._clearHolidayHours(index)}></uui-menu-item>
+            </umb-dropdown>
+        `;
+    }
 
     private _renderRow(holiday: Holiday, index: number, today: string) {
         const expired = isExpired(holiday, today);
@@ -249,6 +360,13 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
                 <td>${formatDateRange(holiday)}</td>
                 <td>${this.localize.term(holiday.repeatYearly ? 'general_yes' : 'general_no')}</td>
                 <td><span class="pill">${this._hoursSummary(holiday)}</span></td>
+                <!--
+                  stopPropagation is not optional: the <tr> opens the holiday sidebar on click, so
+                  without it opening this menu would open the holiday too.
+                -->
+                <td class="actions" @click=${(e: Event) => e.stopPropagation()}>
+                    ${this._renderHolidayMenu(holiday, index)}
+                </td>
             </tr>
         `;
     }
@@ -304,6 +422,11 @@ export class OocHolidaysElement extends UmbLitElement implements UmbPropertyEdit
                                   </th>
                                   <th scope="col">
                                       ${this.localize.term('openOrClosed_columnHours')}
+                                  </th>
+                                  <th scope="col">
+                                      <span class="sr-only"
+                                          >${this.localize.term('general_actions')}</span
+                                      >
                                   </th>
                               </tr>
                           </thead>

@@ -60,6 +60,7 @@ describe('the en dictionary', () => {
         expect(en.openOrClosed.addPresetHours('09:00 – 12:00')).toContain('09:00 – 12:00');
         expect(en.openOrClosed.copyHoursFrom('Monday')).toContain('Monday');
         expect(en.openOrClosed.dayActions('Monday')).toContain('Monday');
+        expect(en.openOrClosed.holidayActions('Christmas')).toContain('Christmas');
     });
 
     it('falls back to a generic name when a holiday has none yet', () => {

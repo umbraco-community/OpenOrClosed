@@ -72,6 +72,11 @@ export default {
         dayActions: (day: string) => `Actions for ${day}`,
         groupWeekdays: 'Weekdays',
         groupWeekend: 'Weekend',
+        duplicateHoliday: 'Duplicate',
+        // A bare word only because duplicateHoliday builds a parenthetical around it and, being
+        // DOM-free, cannot localise for itself.
+        copyWord: 'copy',
+        holidayActions: (name: string) => `Actions for ${name || 'holiday'}`,
 
         // Timeline accessible names
         byAppointmentOnlyShort: 'by appointment only',
