@@ -59,6 +59,8 @@ export default {
 
         // Timeline accessible names
         byAppointmentOnlyShort: 'by appointment only',
+        applyPresetHours: (hours: string) => `Apply preset hours: ${hours}`,
+        presetHoursApplied: (hours: string) => `Preset hours applied: ${hours}`,
 
         // Validation — one key per error code
         errorNameRequired: 'A name is required',

@@ -49,6 +49,14 @@ export class OocTimelineElement extends UmbLitElement {
     @property({ type: Number })
     defaultDurationMinutes = 8 * 60;
 
+    /**
+     * Blocks a click on an *empty* track lays down all at once. Consumers sanitise, exactly as they
+     * already do for `ranges`, which keeps this element free of the configuration it would otherwise
+     * have to read.
+     */
+    @property({ type: Array })
+    preset: HoursRange[] = [];
+
     @state()
     private _announcement = '';
 
@@ -72,6 +80,40 @@ export class OocTimelineElement extends UmbLitElement {
             parts.push(this.localize.term('openOrClosed_byAppointmentOnlyShort'));
         }
         return parts.filter(Boolean).join(', ');
+    }
+
+    /** Whether a click should lay the preset down rather than create a single range. */
+    private get _presetApplies(): boolean {
+        return this.ranges.length === 0 && this.preset.length > 0;
+    }
+
+    private get _presetSummary(): string {
+        return this.preset.map((range) => formatRange(range, this.use24Hour)).join(', ');
+    }
+
+    /** What the track itself is called. With a preset waiting, it also says what a click will do. */
+    private get _trackName(): string {
+        if (!this._presetApplies) return this.trackLabel;
+
+        return [
+            this.trackLabel,
+            this.localize.term('openOrClosed_applyPresetHours', this._presetSummary),
+        ]
+            .filter(Boolean)
+            .join(', ');
+    }
+
+    /** Lays the whole preset down and reports it as one change. */
+    private _applyPreset() {
+        // Cloned: the preset belongs to the data type configuration, and the ranges handed on from
+        // here are about to be dragged around.
+        this._commit(this.preset.map((range) => ({ ...range })));
+
+        // _commit only announces a single range, by index. This one is about the whole set.
+        this._announcement = this.localize.term(
+            'openOrClosed_presetHoursApplied',
+            this._presetSummary,
+        );
     }
 
     /** Turns a pointer position into minutes since midnight. */
@@ -130,6 +172,11 @@ export class OocTimelineElement extends UmbLitElement {
         // silently add hours.
         if (event.button !== 0 || event.target !== event.currentTarget) return;
 
+        if (this._presetApplies) {
+            this._applyPreset();
+            return;
+        }
+
         const created = createRange(
             this.ranges,
             this.#minutesFromEvent(event),
@@ -142,6 +189,13 @@ export class OocTimelineElement extends UmbLitElement {
 
     private _onTrackKeydown = (event: KeyboardEvent) => {
         if (event.target !== event.currentTarget || event.key !== 'Enter') return;
+
+        if (this._presetApplies) {
+            event.preventDefault();
+            this._applyPreset();
+            void this._focusBlock(0);
+            return;
+        }
 
         const gap = largestGap(this.ranges);
         if (!gap) return;
@@ -285,6 +339,18 @@ export class OocTimelineElement extends UmbLitElement {
             white-space: nowrap;
         }
 
+        /* The shape of a block without any of its interaction - see _renderGhosts. */
+        .ghost {
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            border: 1px dashed var(--uui-color-selected);
+            border-radius: var(--uui-border-radius);
+            background: var(--uui-color-surface-alt);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
         .tooltip {
             position: absolute;
             bottom: calc(100% + 4px);
@@ -361,6 +427,27 @@ export class OocTimelineElement extends UmbLitElement {
         }
     `;
 
+    /**
+     * A faint copy of the preset, shown only while the track is empty, so the gesture that applies
+     * it is visible before it is used.
+     *
+     * `pointer-events: none` in the styles is load-bearing: _onTrackPointerDown bails unless the
+     * event target is the track itself, so a ghost accepting pointer events would swallow the very
+     * click it exists to advertise.
+     */
+    private _renderGhosts() {
+        return this.preset.map((range) => {
+            const start = parseTime(range.start);
+
+            return html`<i
+                class="ghost"
+                aria-hidden="true"
+                style="left:${this._percent(start)}%;width:${this._percent(
+                    parseTime(range.end) - start,
+                )}%"></i>`;
+        });
+    }
+
     protected _renderBlock(range: HoursRange, index: number) {
         const start = parseTime(range.start);
         const end = parseTime(range.end);
@@ -403,12 +490,13 @@ export class OocTimelineElement extends UmbLitElement {
                 part="track"
                 tabindex="0"
                 role="group"
-                aria-label=${this.trackLabel}
+                aria-label=${this._trackName}
                 @pointerdown=${this._onTrackPointerDown}
                 @keydown=${this._onTrackKeydown}>
                 ${[6, 12, 18].map(
                     (hour) => html`<i class="divider" style="left:${this._percent(hour * 60)}%"></i>`,
                 )}
+                ${this._presetApplies ? this._renderGhosts() : ''}
                 ${this.ranges.map((range, index) => this._renderBlock(range, index))}
             </div>
             <span class="sr-only" aria-live="polite">${this._announcement}</span>

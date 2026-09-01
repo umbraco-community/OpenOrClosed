@@ -53,10 +53,14 @@ describe('the en dictionary', () => {
         }
     });
 
-    it('phrases the two argument-taking entries from their arguments', () => {
+    it('phrases the argument-taking entries from their arguments', () => {
         expect(en.openOrClosed.errorTooShort(15)).toContain('15');
         expect(en.openOrClosed.openHolidayAction('Christmas')).toContain('Christmas');
         expect(en.openOrClosed.defaultHoursHint('09:00 – 17:00')).toContain('09:00 – 17:00');
+        expect(en.openOrClosed.applyPresetHours('09:00 – 12:00, 13:00 – 17:00')).toContain(
+            '09:00 – 12:00, 13:00 – 17:00',
+        );
+        expect(en.openOrClosed.presetHoursApplied('09:00 – 12:00')).toContain('09:00 – 12:00');
     });
 
     it('falls back to a generic name when a holiday has none yet', () => {
