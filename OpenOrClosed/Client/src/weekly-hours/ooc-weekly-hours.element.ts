@@ -6,14 +6,9 @@ import type {
     UmbPropertyEditorConfigCollection,
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
-import {
-    DAY_MINUTES,
-    formatAxis,
-    parseTime,
-    sanitizeRanges,
-    type HoursRange,
-} from '../timeline/time-range.js';
+import { parseTime, sanitizeRanges, type HoursRange } from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
+import '../timeline/ooc-time-axis.element.js';
 import '../timeline/ooc-timeline.element.js';
 
 export interface WeeklyHoursDay {
@@ -114,45 +109,15 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
             gap: var(--uui-size-space-3);
             margin-bottom: var(--uui-size-space-2);
         }
-        .axis {
-            position: relative;
-            height: 18px;
-        }
-        .tick {
-            position: absolute;
-            font-size: var(--uui-type-small-size);
-            color: var(--uui-color-text-alt);
-            transform: translateX(-50%);
-        }
-        .tick.first {
-            transform: none;
-        }
-        .tick.last {
-            transform: translateX(-100%);
-        }
         .day {
             font-size: var(--uui-type-small-size);
         }
     `;
 
     private _renderAxis() {
-        const ticks = [
-            { at: 0, minutes: 0, cls: 'first' },
-            { at: 25, minutes: 6 * 60, cls: '' },
-            { at: 50, minutes: 12 * 60, cls: '' },
-            { at: 75, minutes: 18 * 60, cls: '' },
-            { at: 100, minutes: DAY_MINUTES, cls: 'last' },
-        ];
-
         return html`<div class="row">
             <div></div>
-            <div class="axis">
-                ${ticks.map(
-                    (tick) => html`<span class="tick ${tick.cls}" style="left:${tick.at}%"
-                        >${formatAxis(tick.minutes, this._use24Hour)}</span
-                    >`,
-                )}
-            </div>
+            <ooc-time-axis .use24Hour=${this._use24Hour}></ooc-time-axis>
         </div>`;
     }
 
