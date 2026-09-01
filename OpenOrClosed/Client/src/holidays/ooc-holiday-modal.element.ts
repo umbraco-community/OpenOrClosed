@@ -235,6 +235,7 @@ export class OocHolidayModalElement extends UmbModalBaseElement<
                         ? html`<div class="field">
                               <ooc-timeline
                                   .ranges=${this._hours}
+                                  .preset=${this.data?.presetHours ?? []}
                                   .use24Hour=${this.data?.use24Hour ?? true}
                                   .showAppointmentOnly=${this.data?.showAppointmentOnly ?? false}
                                   .trackLabel=${this._name ||

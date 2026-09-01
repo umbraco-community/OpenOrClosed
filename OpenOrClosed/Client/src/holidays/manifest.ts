@@ -29,11 +29,18 @@ export const manifests: Array<UmbExtensionManifest> = [
                         description: '{#openOrClosed_settingAppointmentOnlyDescription}',
                         propertyEditorUiAlias: 'Umb.PropertyEditorUi.Toggle',
                     },
+                    {
+                        alias: 'presetHours',
+                        label: '#openOrClosed_settingPresetHours',
+                        description: '{#openOrClosed_settingPresetHoursDescription}',
+                        propertyEditorUiAlias: 'OpenOrClosed.PropertyEditorUi.PresetHours',
+                    },
                 ],
                 defaultData: [
                     { alias: 'removeExpiredHolidays', value: true },
                     { alias: 'time_24hr', value: true },
                     { alias: 'showAppointmentOnly', value: false },
+                    { alias: 'presetHours', value: [] },
                 ],
             },
         },

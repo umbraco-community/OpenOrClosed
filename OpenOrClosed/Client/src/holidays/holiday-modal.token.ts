@@ -7,6 +7,8 @@ export interface OocHolidayModalData {
     holiday: Holiday;
     /** Shown as a hint when the mode is Default, so the editor can see what it resolves to. */
     defaultHours: HoursRange[];
+    /** The data type's configured preset, for the Custom track. Already sanitised by the caller. */
+    presetHours: HoursRange[];
     use24Hour: boolean;
     showAppointmentOnly: boolean;
 }

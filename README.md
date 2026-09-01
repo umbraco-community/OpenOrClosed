@@ -36,11 +36,37 @@ its middle to move it; click one to set exact times, add an optional label, or m
 appointment only. Ranges snap to 15 minutes, never cross midnight, and cannot be dragged into
 overlapping. `24:00` is a valid end, meaning open until midnight.
 
+Set **Preset Hours** on the data type and hovering a day — or tabbing into it — offers those blocks
+as faint outlines. Click one and that set alone lands; the others stay on offer, so you can take
+one, two or all of them, in any order. Blocks that would clash with hours already on the day are
+never offered, and clicking anywhere the preset is not offering something adds an ad-hoc set exactly
+as it always has. Labels and the by-appointment flag travel with a preset block, so "Lunch" only has
+to be typed once.
+
 ### Holidays
 
 Named date ranges that override the weekly schedule, with a shared **Default holiday hours**
 timeline at the top and a per-holiday override of `Default`, `Closed` or `Custom`. A holiday can
 repeat yearly, in which case it never expires.
+
+**Preset Hours** works here too, on the **Default holiday hours** track and on a holiday's
+**Custom** track. Mind the difference between the two names: *Preset Hours* is configuration, a
+pattern held on the data type, while *Default holiday hours* is content — the hours this node's
+holidays fall back to.
+
+## Copying hours within a property
+
+Every day on **Weekly Hours**, and every row on **Holidays**, has a `…` action menu.
+
+* **Copy hours to…** opens a list of the other days (or holidays) with **Weekdays**, **Weekend** and
+  **All** shortcuts. Tick the targets and the source's hours replace theirs — targets that already
+  have hours are marked as such before you commit.
+* **Clear hours** empties the day, or returns a holiday to `Default`.
+* **Duplicate**, on Holidays only, copies a whole holiday under a new name and opens it ready for its
+  dates to be changed.
+
+This is not the same thing as the property clipboard below. This copies **within one property on one
+node**; the clipboard copies **a whole property value between nodes**.
 
 ## Copying hours between nodes
 
@@ -166,6 +192,16 @@ A few behaviours worth knowing:
   delete them for real.
 
 ## Change Log
+
+### Version 17.4.0
+
+* Added **Preset Hours** to the Weekly Hours and Holidays data types: configure blocks of hours
+  once, then hover a day — or tab into it — to be offered them as faint outlines, and click the ones
+  you want. Blocks that clash with hours already on the day are not offered. Clicking bare timeline
+  still adds a single ad-hoc set, and leaving the setting empty changes nothing.
+* Every weekday row and holiday row now has an action menu: **Copy hours to…** replicates a row's
+  hours onto any number of others, **Clear hours** empties it, and **Duplicate** copies a whole
+  holiday. See [Copying hours within a property](#copying-hours-within-a-property).
 
 ### Version 17.3.1
 

@@ -7,19 +7,19 @@ import type {
     UmbPropertyEditorUiElement,
 } from '@umbraco-cms/backoffice/property-editor';
 import {
-    DAY_MINUTES,
-    formatAxis,
     parseTime,
+    sanitizePreset,
     sanitizeRanges,
     type HoursRange,
 } from '../timeline/time-range.js';
 import { OOC_RANGE_MODAL } from '../timeline/range-modal.token.js';
+import '../timeline/ooc-time-axis.element.js';
 import '../timeline/ooc-timeline.element.js';
+import { copyRangesTo, type WeeklyHoursDay } from './week.js';
+import { OOC_COPY_TARGETS_MODAL } from '../copy-targets/copy-targets.token.js';
 
-export interface WeeklyHoursDay {
-    day: number;
-    ranges: HoursRange[];
-}
+// Re-exported so the clipboard manifest and anything else that reached for it here still can.
+export type { WeeklyHoursDay } from './week.js';
 
 /**
  * Monday first. The stored `day` values follow System.DayOfWeek, where Sunday is 0.
@@ -71,6 +71,15 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         }
     }
 
+    /**
+     * The configured blocks, ready to apply. The appointment flag is dropped here, as the setting is
+     * read, rather than when a preset is applied - so the ghost preview shows exactly what a click
+     * will produce.
+     */
+    private get _presetHours(): HoursRange[] {
+        return sanitizePreset(this._setting('presetHours'), this._showAppointmentOnly);
+    }
+
     private _rangesFor(day: number): HoursRange[] {
         return sanitizeRanges(this.value?.find((entry) => entry.day === day)?.ranges);
     }
@@ -103,68 +112,114 @@ export class OocWeeklyHoursElement extends UmbLitElement implements UmbPropertyE
         this.dispatchEvent(new UmbChangeEvent());
     }
 
+    /** Saturday and Sunday, as System.DayOfWeek numbers. */
+    private static readonly WEEKEND = [6, 0];
+
+    private async _copyDay(day: number) {
+        const others = WEEK.filter((entry) => entry !== day);
+
+        const groups = [
+            {
+                label: this.localize.term('openOrClosed_groupWeekdays'),
+                ids: others.filter((entry) => !OocWeeklyHoursElement.WEEKEND.includes(entry)),
+            },
+            {
+                label: this.localize.term('openOrClosed_groupWeekend'),
+                ids: others.filter((entry) => OocWeeklyHoursElement.WEEKEND.includes(entry)),
+            },
+            { label: this.localize.term('general_all'), ids: others },
+        ]
+            // Drop a group offering nothing - Weekend, when the source is a weekend day and only one
+            // other remains, still offers one; Weekend with no members cannot happen, but a future
+            // group could.
+            .filter((group) => group.ids.length > 0)
+            .map((group) => ({ label: group.label, ids: group.ids.map(String) }));
+
+        try {
+            const result = await umbOpenModal(this, OOC_COPY_TARGETS_MODAL, {
+                data: {
+                    sourceLabel: dayName(day),
+                    targets: others.map((entry) => ({
+                        id: String(entry),
+                        label: dayName(entry),
+                        occupied: this._rangesFor(entry).length > 0,
+                    })),
+                    groups,
+                },
+            });
+
+            const days = result.ids.map(Number).filter(Number.isInteger);
+            if (days.length === 0) return;
+
+            this.value = copyRangesTo(this.value ?? [], day, days);
+            this.dispatchEvent(new UmbChangeEvent());
+        } catch {
+            // Dismissed - nothing copied.
+        }
+    }
+
     static styles = css`
         :host {
             display: block;
         }
         .row {
             display: grid;
-            grid-template-columns: 90px 1fr;
+            grid-template-columns: 90px 24px 1fr;
             align-items: center;
             gap: var(--uui-size-space-3);
             margin-bottom: var(--uui-size-space-2);
-        }
-        .axis {
-            position: relative;
-            height: 18px;
-        }
-        .tick {
-            position: absolute;
-            font-size: var(--uui-type-small-size);
-            color: var(--uui-color-text-alt);
-            transform: translateX(-50%);
-        }
-        .tick.first {
-            transform: none;
-        }
-        .tick.last {
-            transform: translateX(-100%);
         }
         .day {
             font-size: var(--uui-type-small-size);
         }
     `;
 
-    private _renderAxis() {
-        const ticks = [
-            { at: 0, minutes: 0, cls: 'first' },
-            { at: 25, minutes: 6 * 60, cls: '' },
-            { at: 50, minutes: 12 * 60, cls: '' },
-            { at: 75, minutes: 18 * 60, cls: '' },
-            { at: 100, minutes: DAY_MINUTES, cls: 'last' },
-        ];
+    private _renderDayMenu(day: number) {
+        // Both actions need hours to act on, so an empty day offers a menu that does nothing - which
+        // is better than no menu at all, because the row stays the same shape.
+        const hasHours = this._rangesFor(day).length > 0;
 
+        return html`
+            <umb-dropdown
+                compact
+                hide-expand
+                look="secondary"
+                label=${this.localize.term('openOrClosed_dayActions', dayName(day))}>
+                <uui-symbol-more slot="label"></uui-symbol-more>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_copyHoursTo')}
+                    ?disabled=${!hasHours}
+                    @click-label=${() => this._copyDay(day)}></uui-menu-item>
+                <uui-menu-item
+                    label=${this.localize.term('openOrClosed_clearHours')}
+                    ?disabled=${!hasHours}
+                    @click-label=${() => this._setRanges(day, [])}></uui-menu-item>
+            </umb-dropdown>
+        `;
+    }
+
+    private _renderAxis() {
         return html`<div class="row">
             <div></div>
-            <div class="axis">
-                ${ticks.map(
-                    (tick) => html`<span class="tick ${tick.cls}" style="left:${tick.at}%"
-                        >${formatAxis(tick.minutes, this._use24Hour)}</span
-                    >`,
-                )}
-            </div>
+            <div></div>
+            <ooc-time-axis .use24Hour=${this._use24Hour}></ooc-time-axis>
         </div>`;
     }
 
     render() {
+        // Hoisted: sanitising the setting once beats doing it seven times.
+        const preset = this._presetHours;
+
         return html`
             ${this._renderAxis()}
             ${WEEK.map(
                 (day) => html`
                     <div class="row">
                         <div class="day">${dayName(day)}</div>
+                        ${this._renderDayMenu(day)}
                         <ooc-timeline
                             .ranges=${this._rangesFor(day)}
+                            .preset=${preset}
                             .use24Hour=${this._use24Hour}
                             .showAppointmentOnly=${this._showAppointmentOnly}
                             .defaultDurationMinutes=${this._defaultDuration}

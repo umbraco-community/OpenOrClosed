@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    availablePreset,
     boundsFor,
     createRange,
     DAY_MINUTES,
@@ -13,6 +14,7 @@ import {
     moveRange,
     parseTime,
     resizeRange,
+    sanitizePreset,
     sanitizeRanges,
     snap,
     sortRanges,
@@ -285,6 +287,136 @@ describe('sanitizeRanges', () => {
     it('returns an empty array for anything that is not an array', () => {
         expect(sanitizeRanges(undefined)).toEqual([]);
         expect(sanitizeRanges('nope')).toEqual([]);
+    });
+});
+
+describe('sanitizePreset', () => {
+    it('returns an empty preset for anything unusable', () => {
+        expect(sanitizePreset(undefined, true)).toEqual([]);
+        expect(sanitizePreset(null, true)).toEqual([]);
+        expect(sanitizePreset({}, true)).toEqual([]);
+        expect(sanitizePreset('09:00', true)).toEqual([]);
+    });
+
+    it('sorts the blocks it keeps', () => {
+        expect(sanitizePreset([range('13:00', '17:00'), range('09:00', '12:00')], true)).toEqual([
+            range('09:00', '12:00'),
+            range('13:00', '17:00'),
+        ]);
+    });
+
+    it('drops a block overlapping the one before it', () => {
+        // sanitizeRanges tolerates this; a preset can be hand-written through uSync, and the drag
+        // maths clamps against neighbours that overlapping blocks make meaningless.
+        expect(sanitizePreset([range('09:00', '13:00'), range('12:00', '17:00')], true)).toEqual([
+            range('09:00', '13:00'),
+        ]);
+    });
+
+    it('measures from the last block kept, not the last one seen', () => {
+        // 10:00-20:00 overlaps 09:00-13:00 and goes. 14:00-17:00 must survive: it clears the block
+        // that was kept, and only clashes with the one that never made it in.
+        expect(
+            sanitizePreset(
+                [range('09:00', '13:00'), range('10:00', '20:00'), range('14:00', '17:00')],
+                true,
+            ),
+        ).toEqual([range('09:00', '13:00'), range('14:00', '17:00')]);
+    });
+
+    it('keeps blocks that touch, because touching is not overlapping', () => {
+        expect(sanitizePreset([range('09:00', '12:00'), range('12:00', '17:00')], true)).toEqual([
+            range('09:00', '12:00'),
+            range('12:00', '17:00'),
+        ]);
+    });
+
+    it('clears the appointment flag when the editor does not offer it', () => {
+        const raw = [{ start: '09:00', end: '17:00', label: 'Desk', byAppointmentOnly: true }];
+
+        expect(sanitizePreset(raw, false)).toEqual([
+            { start: '09:00', end: '17:00', label: 'Desk', byAppointmentOnly: false },
+        ]);
+    });
+
+    it('keeps the appointment flag when the editor offers it', () => {
+        const raw = [{ start: '09:00', end: '17:00', label: null, byAppointmentOnly: true }];
+
+        expect(sanitizePreset(raw, true)).toEqual([
+            { start: '09:00', end: '17:00', label: null, byAppointmentOnly: true },
+        ]);
+    });
+
+    it('drops a malformed block without losing the valid ones around it', () => {
+        const raw = [
+            range('09:00', '12:00'),
+            { start: 'nope', end: '13:00' },
+            range('13:00', '17:00'),
+        ];
+
+        expect(sanitizePreset(raw, true)).toEqual([
+            range('09:00', '12:00'),
+            range('13:00', '17:00'),
+        ]);
+    });
+});
+
+describe('availablePreset', () => {
+    const preset = [range('09:00', '12:00'), range('13:00', '17:00'), range('18:00', '20:00')];
+
+    it('offers everything on an empty track', () => {
+        expect(availablePreset([], preset)).toEqual(preset);
+    });
+
+    it('offers nothing when there is no preset', () => {
+        expect(availablePreset([range('09:00', '17:00')], [])).toEqual([]);
+    });
+
+    it('withholds a block matching an existing range exactly', () => {
+        expect(availablePreset([range('13:00', '17:00')], preset)).toEqual([
+            range('09:00', '12:00'),
+            range('18:00', '20:00'),
+        ]);
+    });
+
+    it('withholds a block overlapping an existing range at its start', () => {
+        expect(availablePreset([range('08:00', '10:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block overlapping an existing range at its end', () => {
+        expect(availablePreset([range('11:00', '14:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block that contains an existing range', () => {
+        expect(availablePreset([range('10:00', '11:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('withholds a block that sits inside an existing range', () => {
+        expect(availablePreset([range('08:00', '18:00')], [range('09:00', '12:00')])).toEqual([]);
+    });
+
+    it('offers a block ending exactly where an existing range starts', () => {
+        // Touching is not overlapping - the same rule validateRange applies.
+        expect(availablePreset([range('12:00', '15:00')], [range('09:00', '12:00')])).toEqual([
+            range('09:00', '12:00'),
+        ]);
+    });
+
+    it('offers a block starting exactly where an existing range ends', () => {
+        expect(availablePreset([range('06:00', '09:00')], [range('09:00', '12:00')])).toEqual([
+            range('09:00', '12:00'),
+        ]);
+    });
+
+    it('keeps preset order when the middle block clashes', () => {
+        expect(availablePreset([range('13:30', '14:30')], preset)).toEqual([
+            range('09:00', '12:00'),
+            range('18:00', '20:00'),
+        ]);
+    });
+
+    it('offers nothing against a full day', () => {
+        expect(availablePreset([range('00:00', '24:00')], preset)).toEqual([]);
     });
 });
 

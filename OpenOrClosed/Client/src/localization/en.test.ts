@@ -53,10 +53,14 @@ describe('the en dictionary', () => {
         }
     });
 
-    it('phrases the two argument-taking entries from their arguments', () => {
+    it('phrases the argument-taking entries from their arguments', () => {
         expect(en.openOrClosed.errorTooShort(15)).toContain('15');
         expect(en.openOrClosed.openHolidayAction('Christmas')).toContain('Christmas');
         expect(en.openOrClosed.defaultHoursHint('09:00 – 17:00')).toContain('09:00 – 17:00');
+        expect(en.openOrClosed.addPresetHours('09:00 – 12:00')).toContain('09:00 – 12:00');
+        expect(en.openOrClosed.copyHoursFrom('Monday')).toContain('Monday');
+        expect(en.openOrClosed.dayActions('Monday')).toContain('Monday');
+        expect(en.openOrClosed.holidayActions('Christmas')).toContain('Christmas');
     });
 
     it('falls back to a generic name when a holiday has none yet', () => {
@@ -83,7 +87,7 @@ describe('manifest localisation references', () => {
     it('covers every editor and setting', () => {
         // Guards the fixtures below: an empty list would make every other case pass vacuously.
         expect(manifests.filter((manifest) => manifest.meta?.label).length).toBe(2);
-        expect(settings.length).toBe(7);
+        expect(settings.length).toBe(9);
     });
 
     it('marks setting labels with a bare #key', () => {

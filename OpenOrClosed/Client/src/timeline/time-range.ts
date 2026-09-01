@@ -256,3 +256,50 @@ export function sanitizeRanges(raw: unknown): HoursRange[] {
         byAppointmentOnly: entry.byAppointmentOnly === true,
     }));
 }
+
+/**
+ * A preset read from data type configuration, fit to apply to a track.
+ *
+ * `sanitizeRanges` does the coercion and the sort, but tolerates overlaps - harmless for a value the
+ * editor wrote, since it cannot produce one, but a preset can arrive by hand through uSync or a data
+ * type import. Overlaps have to go: `boundsFor` derives a block's limits from its immediate
+ * neighbours, so `moveRange` and `resizeRange` would clamp against nothing meaningful.
+ *
+ * `allowAppointmentOnly` is false when the editor's own appointment-only setting is off, so a flag
+ * the content editor could neither see nor clear is never written into a document.
+ */
+export function sanitizePreset(raw: unknown, allowAppointmentOnly: boolean): HoursRange[] {
+    const kept: HoursRange[] = [];
+
+    for (const range of sanitizeRanges(raw)) {
+        // Against the last block kept, not the last one seen: a dropped block must not become the
+        // point everything after it is measured from.
+        const previous = kept[kept.length - 1];
+        if (previous && parseTime(range.start) < parseTime(previous.end)) continue;
+
+        kept.push(allowAppointmentOnly ? range : { ...range, byAppointmentOnly: false });
+    }
+
+    return kept;
+}
+
+/**
+ * The preset blocks that fit: those overlapping nothing already on the track.
+ *
+ * The overlap test is the one `validateRange` uses, so touching ranges are kept - a preset block
+ * ending exactly where an existing one starts is still offered, consistent with every other rule in
+ * this module.
+ *
+ * This is the whole of the clash rule, and what makes the palette safe to click at: nothing on offer
+ * can displace anything already present.
+ */
+export function availablePreset(ranges: HoursRange[], preset: HoursRange[]): HoursRange[] {
+    return preset.filter((candidate) => {
+        const start = parseTime(candidate.start);
+        const end = parseTime(candidate.end);
+
+        return !ranges.some(
+            (existing) => start < parseTime(existing.end) && end > parseTime(existing.start),
+        );
+    });
+}

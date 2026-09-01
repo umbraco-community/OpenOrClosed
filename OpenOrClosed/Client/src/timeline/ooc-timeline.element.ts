@@ -7,6 +7,7 @@ import {
 } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import {
+    availablePreset,
     createRange,
     DAY_MINUTES,
     DEFAULT_SNAP_MINUTES,
@@ -15,6 +16,7 @@ import {
     moveRange,
     parseTime,
     resizeRange,
+    sortRanges,
     type HoursRange,
 } from './time-range.js';
 
@@ -49,6 +51,14 @@ export class OocTimelineElement extends UmbLitElement {
     @property({ type: Number })
     defaultDurationMinutes = 8 * 60;
 
+    /**
+     * Blocks this track offers to add, one at a time. Consumers sanitise, exactly as they already do
+     * for `ranges`, which keeps this element free of the configuration it would otherwise have to
+     * read. Those clashing with what is already here never reach the screen.
+     */
+    @property({ type: Array })
+    preset: HoursRange[] = [];
+
     @state()
     private _announcement = '';
 
@@ -65,13 +75,48 @@ export class OocTimelineElement extends UmbLitElement {
         return (minutes / DAY_MINUTES) * 100;
     }
 
-    protected _accessibleName(range: HoursRange): string {
-        const parts = [this.trackLabel, formatRange(range, this.use24Hour)];
+    /** The range on its own: the times, then whatever else it carries. */
+    private _rangeName(range: HoursRange): string {
+        const parts = [formatRange(range, this.use24Hour)];
         if (range.label) parts.push(range.label);
         if (range.byAppointmentOnly) {
             parts.push(this.localize.term('openOrClosed_byAppointmentOnlyShort'));
         }
-        return parts.filter(Boolean).join(', ');
+        return parts.join(', ');
+    }
+
+    protected _accessibleName(range: HoursRange): string {
+        return [this.trackLabel, this._rangeName(range)].filter(Boolean).join(', ');
+    }
+
+    /** The preset blocks that fit alongside whatever is already on this track. */
+    private get _availableGhosts(): HoursRange[] {
+        return availablePreset(this.ranges, this.preset);
+    }
+
+    /** What a ghost answers to: "Monday, Add 09:00 – 12:00, Lunch". */
+    private _ghostName(range: HoursRange): string {
+        return [
+            this.trackLabel,
+            this.localize.term('openOrClosed_addPresetHours', this._rangeName(range)),
+        ]
+            .filter(Boolean)
+            .join(', ');
+    }
+
+    /** Takes one offered block onto the track. The others stay on offer. */
+    private _takeGhost(range: HoursRange) {
+        // Cloned: the preset belongs to the data type configuration, and this copy is about to be
+        // dragged around.
+        const taken = { ...range };
+        const updated = sortRanges([...this.ranges, taken]);
+
+        // sortRanges preserves object identity, so this finds the block just added wherever sorting
+        // put it - and _commit announces the range at that index for us.
+        const index = updated.findIndex((entry) => entry === taken);
+
+        this._commit(updated, index);
+        void this._focusBlock(index);
     }
 
     /** Turns a pointer position into minutes since midnight. */
@@ -279,10 +324,59 @@ export class OocTimelineElement extends UmbLitElement {
             outline-offset: 1px;
         }
 
-        .block .times {
+        .block .times,
+        .ghost .times {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        /*
+         * Hidden by visibility, deliberately, and never by opacity: visibility also takes the button
+         * out of the tab order, so a ghost is never a focus target nobody can see. The track itself
+         * is tabbable and comes first, so Tab reaches it, :focus-within fires, and the offers appear
+         * in time for the next Tab to land on one.
+         */
+        .ghost {
+            position: absolute;
+            top: 3px;
+            bottom: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 1px dashed var(--uui-color-selected);
+            border-radius: var(--uui-border-radius);
+            background: var(--uui-color-surface-alt);
+            color: var(--uui-color-selected);
+            font-size: var(--uui-type-small-size);
+            white-space: nowrap;
+            cursor: pointer;
+            opacity: 0.45;
+            visibility: hidden;
+            transition: opacity 80ms ease-in-out;
+        }
+
+        :host(:hover) .ghost,
+        :host(:focus-within) .ghost {
+            visibility: visible;
+        }
+
+        /* Nothing to hover with, so there is no reveal to wait for. */
+        @media (hover: none) {
+            .ghost {
+                visibility: visible;
+            }
+        }
+
+        .ghost:hover,
+        .ghost:focus-visible {
+            opacity: 1;
+        }
+
+        .ghost:focus-visible {
+            outline: 2px solid var(--uui-color-focus);
+            outline-offset: 1px;
         }
 
         .tooltip {
@@ -309,7 +403,8 @@ export class OocTimelineElement extends UmbLitElement {
         }
 
         /* Too narrow to read - the label and appointment icons carry the meaning. */
-        .block.narrow .times {
+        .block.narrow .times,
+        .ghost.narrow .times {
             display: none;
         }
 
@@ -361,6 +456,33 @@ export class OocTimelineElement extends UmbLitElement {
         }
     `;
 
+    /**
+     * The blocks the preset is offering, drawn in place as the blocks they would become.
+     *
+     * Real buttons, not decoration: each is separately selectable, by pointer or by keyboard. The
+     * track's own pointerdown handler bails unless the event target is the track itself, so a click
+     * landing here never also creates an ad-hoc range.
+     */
+    private _renderGhosts() {
+        return this._availableGhosts.map((range) => {
+            const start = parseTime(range.start);
+            const widthPercent = this._percent(parseTime(range.end) - start);
+            const narrow = widthPercent < OocTimelineElement.NARROW_PERCENT;
+
+            return html`
+                <button
+                    type="button"
+                    class="ghost ${narrow ? 'narrow' : ''}"
+                    part="ghost"
+                    style="left:${this._percent(start)}%;width:${widthPercent}%"
+                    aria-label=${this._ghostName(range)}
+                    @click=${() => this._takeGhost(range)}>
+                    <span class="times">${formatRange(range, this.use24Hour)}</span>
+                </button>
+            `;
+        });
+    }
+
     protected _renderBlock(range: HoursRange, index: number) {
         const start = parseTime(range.start);
         const end = parseTime(range.end);
@@ -410,6 +532,7 @@ export class OocTimelineElement extends UmbLitElement {
                     (hour) => html`<i class="divider" style="left:${this._percent(hour * 60)}%"></i>`,
                 )}
                 ${this.ranges.map((range, index) => this._renderBlock(range, index))}
+                ${this._renderGhosts()}
             </div>
             <span class="sr-only" aria-live="polite">${this._announcement}</span>
         `;
