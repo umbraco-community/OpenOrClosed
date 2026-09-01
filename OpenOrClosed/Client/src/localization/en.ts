@@ -10,6 +10,7 @@ export default {
         // Property editor manifests
         weeklyHoursLabel: 'Weekly Hours',
         holidaysLabel: 'Holidays',
+        presetHoursLabel: 'Preset Hours',
 
         // Data type settings
         settingTimeFormat: 'Time Format',
