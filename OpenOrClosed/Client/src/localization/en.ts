@@ -28,7 +28,7 @@ export default {
             'Hide finished holidays from the converted value and the Delivery API. They stay visible in this editor so a mistyped date can still be corrected.',
         settingPresetHours: 'Preset Hours',
         settingPresetHoursDescription:
-            'Blocks of hours applied in one click to an empty timeline. On Holidays this is a pattern held in the data type — not the Default holiday hours this node falls back to. Leave it empty to add hours one block at a time.',
+            'Blocks of hours you can add to a day in one click. On Holidays this is a pattern held in the data type — not the Default holiday hours this node falls back to. Leave it empty to add hours one block at a time.',
 
         // Holidays editor
         defaultHolidayHours: 'Default holiday hours',
@@ -63,8 +63,7 @@ export default {
 
         // Timeline accessible names
         byAppointmentOnlyShort: 'by appointment only',
-        applyPresetHours: (hours: string) => `Apply preset hours: ${hours}`,
-        presetHoursApplied: (hours: string) => `Preset hours applied: ${hours}`,
+        addPresetHours: (hours: string) => `Add ${hours}`,
 
         // Validation — one key per error code
         errorNameRequired: 'A name is required',
