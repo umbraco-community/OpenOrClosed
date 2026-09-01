@@ -169,3 +169,32 @@ export function sortHolidays(holidays: Holiday[]): Holiday[] {
 export function formatDateRange(holiday: Holiday): string {
     return holiday.start === holiday.end ? holiday.start : `${holiday.start} – ${holiday.end}`;
 }
+
+/**
+ * A copy of `holiday` under a name nothing in `existingNames` is using.
+ *
+ * `copyWord` is supplied by the caller because this module is DOM-free and cannot reach Umbraco's
+ * localisation - the same reason HolidayError is a code rather than a sentence.
+ *
+ * `hours` is deep-copied: sharing the array would make editing the duplicate edit the original.
+ */
+export function duplicateHoliday(
+    holiday: Holiday,
+    existingNames: string[],
+    copyWord: string,
+): Holiday {
+    const taken = new Set(existingNames);
+    const base = holiday.name.trim();
+    const suffix = (attempt: number) =>
+        attempt === 1 ? `(${copyWord})` : `(${copyWord} ${attempt})`;
+    const nameFor = (attempt: number) => (base ? `${base} ${suffix(attempt)}` : suffix(attempt));
+
+    let attempt = 1;
+    while (taken.has(nameFor(attempt))) attempt += 1;
+
+    return {
+        ...holiday,
+        name: nameFor(attempt),
+        hours: holiday.hours.map((range) => ({ ...range })),
+    };
+}

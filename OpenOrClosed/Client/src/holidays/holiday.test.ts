@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     compareDates,
+    duplicateHoliday,
     emptyHoliday,
     endFollowingStart,
     holidayConsistencyError,
@@ -343,5 +344,64 @@ describe('validateHoliday still owns the required rules', () => {
         const reversed = holiday({ start: '2026-12-25', end: '2026-09-19' });
 
         expect(validateHoliday(reversed)).toBe(holidayConsistencyError(reversed));
+    });
+});
+
+describe('duplicateHoliday', () => {
+    it('names the copy after the original', () => {
+        const copy = duplicateHoliday(holiday({ name: 'Christmas Day' }), ['Christmas Day'], 'copy');
+
+        expect(copy.name).toBe('Christmas Day (copy)');
+    });
+
+    it('numbers the copy when that name is taken', () => {
+        const copy = duplicateHoliday(
+            holiday({ name: 'Christmas Day' }),
+            ['Christmas Day', 'Christmas Day (copy)'],
+            'copy',
+        );
+
+        expect(copy.name).toBe('Christmas Day (copy 2)');
+    });
+
+    it('keeps counting past the second copy', () => {
+        const copy = duplicateHoliday(
+            holiday({ name: 'Christmas Day' }),
+            ['Christmas Day', 'Christmas Day (copy)', 'Christmas Day (copy 2)'],
+            'copy',
+        );
+
+        expect(copy.name).toBe('Christmas Day (copy 3)');
+    });
+
+    it('names a copy of an unnamed holiday', () => {
+        expect(duplicateHoliday(holiday({ name: '' }), [], 'copy').name).toBe('(copy)');
+    });
+
+    it('carries every other field across', () => {
+        const source = holiday({
+            name: 'Stocktake',
+            start: '2026-08-20',
+            end: '2026-08-21',
+            repeatYearly: true,
+            hoursMode: 'custom',
+            hours: [{ start: '09:00', end: '12:00', label: 'Morning', byAppointmentOnly: true }],
+        });
+
+        const copy = duplicateHoliday(source, [], 'copy');
+
+        expect(copy).toEqual({ ...source, name: 'Stocktake (copy)' });
+    });
+
+    it('deep-copies the hours, so editing the copy leaves the original alone', () => {
+        const source = holiday({
+            hoursMode: 'custom',
+            hours: [{ start: '09:00', end: '12:00', label: null, byAppointmentOnly: false }],
+        });
+
+        const copy = duplicateHoliday(source, [], 'copy');
+        copy.hours[0].start = '06:00';
+
+        expect(source.hours[0].start).toBe('09:00');
     });
 });
