@@ -36,10 +36,12 @@ its middle to move it; click one to set exact times, add an optional label, or m
 appointment only. Ranges snap to 15 minutes, never cross midnight, and cannot be dragged into
 overlapping. `24:00` is a valid end, meaning open until midnight.
 
-Set **Preset Hours** on the data type and an empty day draws them as a faint outline; clicking the
-day lays them all down at once. A day that already has hours keeps the original behaviour — clicking
-a gap adds a single block — so a preset can never overwrite hours you have tuned by hand. Labels and
-the by-appointment flag travel with a preset block, so "Lunch" only has to be typed once.
+Set **Preset Hours** on the data type and hovering a day — or tabbing into it — offers those blocks
+as faint outlines. Click one and that set alone lands; the others stay on offer, so you can take
+one, two or all of them, in any order. Blocks that would clash with hours already on the day are
+never offered, and clicking anywhere the preset is not offering something adds an ad-hoc set exactly
+as it always has. Labels and the by-appointment flag travel with a preset block, so "Lunch" only has
+to be typed once.
 
 ### Holidays
 
@@ -180,9 +182,9 @@ A few behaviours worth knowing:
 ### Version 17.4.0
 
 * Added **Preset Hours** to the Weekly Hours and Holidays data types: configure blocks of hours
-  once, then click an empty timeline to apply them all at once. Empty tracks show the preset as a
-  faint outline so the gesture is visible; a track that already has hours behaves exactly as before.
-  Leaving the setting empty changes nothing.
+  once, then hover a day — or tab into it — to be offered them as faint outlines, and click the ones
+  you want. Blocks that clash with hours already on the day are not offered. Clicking bare timeline
+  still adds a single ad-hoc set, and leaving the setting empty changes nothing.
 
 ### Version 17.3.1
 
